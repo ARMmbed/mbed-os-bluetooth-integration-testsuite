@@ -1,0 +1,54 @@
+{
+    "macros": [
+        "OS_TASKCNT=1",
+        "OS_IDLESTKSIZE=32",
+        "OS_STKSIZE=1",
+        "OS_TIMERS=0",
+        "OS_FIFOSZ=4",
+        "NDEBUG=1",
+        "MBED_CMDLINE_MAX_LINE_LENGTH=1000"
+    ],
+    "target_overrides": {
+        "*": {
+            "target.printf_lib": "std",
+            "platform.stdio-flush-at-exit": false,
+            "platform.stdio-baud-rate": 115200,
+            "cordio.desired-att-mtu": 80
+        },
+        "K64F": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG"],
+            "target.macros_add": ["IDB0XA1_D13_PATCH"]
+        },
+        "NUCLEO_F401RE": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "MCU_NRF51_32K_UNIFIED": {
+            "target.macros_add": [
+                "NO_FILESYSTEM", 
+                "MBED_CONF_APP_MAIN_STACK_SIZE=2048"
+            ]
+        },
+        "MCU_NRF52832": {
+            "target.macros_add": ["MBED_CONF_APP_MAIN_STACK_SIZE=8192"]
+        },
+        "MCU_NRF52840": {
+            "target.macros_add": ["MBED_CONF_APP_MAIN_STACK_SIZE=8192"]
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
+        },
+        "NRF52_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
+        }
+    }
+}
