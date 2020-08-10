@@ -87,6 +87,17 @@ static void printConnectionResult(serialization::JSONOutputStream& os, const ble
     os << endObject;
 }
 
+
+static void printDisconnectionResult(serialization::JSONOutputStream& os, const ble::DisconnectionCompleteEvent &event)
+{
+    os << startObject;
+
+    os << key("connection_handle") << event.getConnectionHandle()
+        << key("reason") << event.getReason();
+
+    os << endObject;
+}
+
 struct EventHandler : public ble::Gap::EventHandler {
 
     virtual void onScanRequestReceived(const ble::ScanRequestEvent &event)
@@ -1204,6 +1215,22 @@ DECLARE_CMD(GetMaxPeriodicAdvertiserListSize) {
     }
 };
 
+DECLARE_CMD(StartConnecting) {
+    CMD_NAME("startConnecting")
+    CMD_ARGS(
+        CMD_ARG("ble::peer_address_type_t::type", "peerAddressType", ""),
+        CMD_ARG("ble::address_t", "peerAddress", "")
+    )
+    CMD_HANDLER(
+        ble::peer_address_type_t::type peerAddressType,
+        ble::address_t &peerAddress,
+        CommandResponsePtr& response
+    ) {
+        ble_error_t err = gap().connect(peerAddressType, peerAddress, getConnectionParameters());
+        reportErrorOrSuccess(response, err);
+    }
+};
+
 DECLARE_CMD(Connect) {
     CMD_NAME("connect")
     CMD_ARGS(
@@ -1313,10 +1340,63 @@ DECLARE_CMD(WaitForConnection) {
     };
 };
 
+
+
+DECLARE_CMD(WaitForDisconnection) {
+    CMD_NAME("waitForDisconnection")
+    CMD_ARGS(
+        CMD_ARG("uint32_t", "timeout", "")
+    )
+    CMD_HANDLER(
+        uint32_t timeout,
+        CommandResponsePtr& response
+    ) {
+        startProcedure<waitForDisconnectionProcedure>(
+            response, timeout /* ms */
+        );
+    }
+
+    struct waitForDisconnectionProcedure : public AsyncProcedure, Gap::EventHandler {
+        waitForDisconnectionProcedure(
+            CommandResponsePtr& response,
+            uint32_t procedureTimeout
+        ) : AsyncProcedure(response, procedureTimeout)
+        {
+            gap().setEventHandler(this);
+        }
+
+        virtual ~waitForDisconnectionProcedure() {
+            // revert to default event handler
+            enable_event_handling();
+        }
+
+        // AsyncProcedure implementation
+        virtual bool doStart() {
+            return true;
+        }
+
+        // Gap::EventHandler implementation
+        virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
+        {
+            response->success();
+            serialization::JSONOutputStream& os = response->getResultStream();
+            printDisconnectionResult(os, event);
+            terminate();
+        }
+    };
+};
+
 DECLARE_CMD(CancelConnect) {
     CMD_NAME("cancelConnect")
-    CMD_HANDLER(CommandResponsePtr& response) {
-        ble_error_t err = gap().cancelConnect();
+    CMD_ARGS(
+        CMD_ARG("ble::peer_address_type_t::type", "peerAddressType", ""),
+        CMD_ARG("ble::address_t", "peerAddress", "")
+    )
+    CMD_HANDLER(
+        ble::peer_address_type_t::type peerAddressType,
+        ble::address_t &peerAddress,
+        CommandResponsePtr& response) {
+        ble_error_t err = gap().cancelConnect(peerAddressType, peerAddress);
         reportErrorOrSuccess(response, err);
     }
 };
@@ -1469,7 +1549,9 @@ static const Command* const _cmd_handlers[] = {
     CMD_INSTANCE(ClearPeriodicAdvertiserList),
     CMD_INSTANCE(GetMaxPeriodicAdvertiserListSize),
     CMD_INSTANCE(Connect),
+    CMD_INSTANCE(StartConnecting),
     CMD_INSTANCE(WaitForConnection),
+    CMD_INSTANCE(WaitForDisconnection),
     CMD_INSTANCE(CancelConnect),
     CMD_INSTANCE(UpdateConnectionParameters),
     CMD_INSTANCE(ManageConnectionParametersUpdateRequest),

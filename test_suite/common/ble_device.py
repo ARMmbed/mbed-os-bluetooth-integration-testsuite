@@ -282,7 +282,8 @@ class BleDevice(Device):
             "startScan", "scanForAddress", "stopScan", "createSync", "createSyncFromList",
             "cancelCreateSync", "terminateSync", "addDeviceToPeriodicAdvertiserList",
             "removeDeviceFromPeriodicAdvertiserList", "clearPeriodicAdvertiserList",
-            "getMaxPeriodicAdvertiserListSize", "connect", "waitForConnection", "cancelConnect",
+            "getMaxPeriodicAdvertiserListSize", "connect", "waitForConnection",
+            "startConnecting", "cancelConnect", "waitForDisconnection",
             "updateConnectionParameters", "manageConnectionParametersUpdateRequest",
             "acceptConnectionParametersUpdate", "rejectConnectionParametersUpdate",
             "disconnect", "isFeatureSupported"

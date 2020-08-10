@@ -379,7 +379,7 @@ The `gap` module expose functions from the class `Gap`:
 
 * invocation: `gap scanForAddress`
 * arguments:
-  - [`MaxAddress`](#macaddress) **peer_address**: 
+  - [`MacAddress`](#macaddress) **peer_address**: 
   - [`uint32_t`](#uint32_t) **timeout**: 
 * result: None
 * modeled after: `Gap::scanForAddress`
@@ -398,7 +398,7 @@ The `gap` module expose functions from the class `Gap`:
 * invocation: `gap createSync`
 * arguments:
   - [`AddressType`](#addresstype) **peerAddressType**: 
-  - [`MaxAddress`](#macaddress) **peerAddress**: 
+  - [`MacAddress`](#macaddress) **peerAddress**: 
   - [`uint8_t`](#uint8_t) **sid**: 
   - [`uint16_t`](#uint16_t) **maxPacketSkip**: 
   - [`SyncTimeout`](#synctimeout) **timeout**: 
@@ -438,7 +438,7 @@ The `gap` module expose functions from the class `Gap`:
 * invocation: `gap addDeviceToPeriodicAdvertiserList`
 * arguments:
   - [`AddressType`](#addresstype) **peerAddressType**: 
-  - [`MaxAddress`](#macaddress) **peerAddress**: 
+  - [`MacAddress`](#macaddress) **peerAddress**: 
   - [`uint16_t`](#uint16_t) **sid**: 
 * result: None
 * modeled after: `Gap::addDeviceToPeriodicAdvertiserList`
@@ -449,7 +449,7 @@ The `gap` module expose functions from the class `Gap`:
 * invocation: `gap removeDeviceFromPeriodicAdvertiserList`
 * arguments:
   - [`AddressType`](#addresstype) **peerAddressType**: 
-  - [`MaxAddress`](#macaddress) **peerAddress**: 
+  - [`MacAddress`](#macaddress) **peerAddress**: 
   - [`uint16_t`](#uint16_t) **sid**: 
 * result: None
 * modeled after: `Gap::removeDeviceFromPeriodicAdvertiserList`
@@ -476,7 +476,7 @@ The `gap` module expose functions from the class `Gap`:
 * invocation: `gap connect`
 * arguments:
   - [`AddressType`](#addresstype) **peerAddressType**: 
-  - [`MaxAddress`](#macaddress) **peerAddress**: 
+  - [`MacAddress`](#macaddress) **peerAddress**: 
 * result: None
 * modeled after: `Gap::connect`
 
@@ -493,7 +493,13 @@ The `gap` module expose functions from the class `Gap`:
 ### cancelConnect
 
 * invocation: `gap cancelConnect`
-* arguments: None
+* description: This will attempt to cancel a connection process if it's still ongoing. This does not guarantee success
+and a connection may or may not be created. If successful, this will produce a connection event showing a failed
+connection. Will not drop a connection if it already has been established. 
+* arguments:
+  - [`AddressType`](#addresstype) **peerAddressType**: The address type of the connection to be canceled
+  - [`MacAddress`](#macaddress) **peerAddress**: There can be many connection attempts, we need to specify the address
+  so that the connection block can be recovered
 * result: None
 * modeled after: `Gap::cancelConnect`
 
