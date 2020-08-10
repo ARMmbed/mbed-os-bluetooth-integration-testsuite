@@ -15,9 +15,8 @@
 #define BLE_CLIAPP_GAP_ADVERTISING_DATA_SERIALIZER_H_
 
 #include "Serialization/Serializer.h"
-#include "ble/UUID.h"
 #include <algorithm>
-#include "UUID.h"
+#include "Serialization/UUID.h"
 #include "Hex.h"
 
 #include "CLICommand/CommandArgs.h"

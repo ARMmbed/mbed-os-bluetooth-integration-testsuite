@@ -14,10 +14,15 @@
 #ifndef BLE_CLIAPP_SECURITY_MANAGER_SERIALIZER_H_
 #define BLE_CLIAPP_SECURITY_MANAGER_SERIALIZER_H_
 
-#include <ble/SecurityManager.h>
-#include <ble/BLETypes.h>
+#include "ble/SecurityManager.h"
+#include "ble/common/ble/BLETypes.h"
 #include "Serialization/JSONOutputStream.h"
 #include "Serialization/Serializer.h"
+
+using ble::Gap;
+using ble::GattClient;
+using ble::GattServer;
+using ble::SecurityManager;
 
 template<>
 struct SerializerDescription<SecurityManager::SecurityIOCapabilities_t> {

@@ -13,8 +13,8 @@
  */
 
 #include "ble/BLE.h"
-#include "ble/DiscoveredService.h"
-#include "ble/DiscoveredCharacteristic.h"
+#include "ble/common/ble/DiscoveredService.h"
+#include "ble/common/ble/DiscoveredCharacteristic.h"
 
 
 #include "Serialization/Serializer.h"
@@ -34,6 +34,11 @@
 #include "Commands/GapCommands.h"
 
 using mbed::util::SharedPointer;
+using ble::Gap;
+using ble::GattClient;
+using ble::GattServer;
+using ble::SecurityManager;
+
 
 // TODO: description of returned results
 

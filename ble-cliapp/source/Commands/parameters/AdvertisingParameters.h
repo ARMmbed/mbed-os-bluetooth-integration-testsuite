@@ -14,7 +14,7 @@
 #ifndef BLE_CLIAPP_ADVERTISINGPARAMETERS_H
 #define BLE_CLIAPP_ADVERTISINGPARAMETERS_H
 
-#include "ble/gap/AdvertisingParameters.h"
+#include "ble/common/ble/gap/AdvertisingParameters.h"
 #include "CLICommand/CommandSuite.h"
 
 class AdvertisingParametersCommandSuiteDescription {

@@ -32,19 +32,23 @@
 #include "CLICommand/CommandHelper.h"
 
 using mbed::util::SharedPointer;
+using ble::Gap;
+using ble::GattClient;
+using ble::GattServer;
+using ble::SecurityManager;
 
 // isolation
 namespace {
 
 static ServiceBuilder* serviceBuilder = NULL;
 
-static detail::RAIIGattService** gattServices = NULL;
+static ::detail::RAIIGattService** gattServices = NULL;
 static size_t gattServicesCount = 0;
 static bool cleanupRegistered = false;
 
 static void cleanupServiceBuilder();
 
-static void whenShutdown(const GattServer *) {
+static void whenShutdown(const ble::GattServer*) {
     cleanupServiceBuilder();
     for(size_t i = 0; i < gattServicesCount; ++i) {
         delete gattServices[i];
@@ -394,7 +398,7 @@ DECLARE_CMD(CommitServiceCommand) {
         }
 
         serviceBuilder->commit();
-        detail::RAIIGattService* service = serviceBuilder->release();
+        ::detail::RAIIGattService* service = serviceBuilder->release();
 
         ble_error_t err = gattServer().addService(*service);
         if(err) {
@@ -460,7 +464,7 @@ DECLARE_CMD(CommitServiceCommand) {
             os << endObject;
 
             // add the service inside the list of instantiated services
-            gattServices = static_cast<detail::RAIIGattService**>(std::realloc(gattServices, sizeof(*gattServices) * (gattServicesCount + 1)));
+            gattServices = static_cast<::detail::RAIIGattService**>(std::realloc(gattServices, sizeof(*gattServices) * (gattServicesCount + 1)));
             gattServices[gattServicesCount] = service;
             gattServicesCount += 1;
 
