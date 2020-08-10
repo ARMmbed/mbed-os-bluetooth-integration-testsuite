@@ -13,7 +13,8 @@
  */
 #include <stddef.h>
 #include "DiscoveredCharacteristic.h"
-#include "UUID.h"
+#include "ble/common/ble/UUID.h"
+#include "Serialization/UUID.h"
 
 serialization::JSONOutputStream& operator<<(serialization::JSONOutputStream& os, const DiscoveredCharacteristic& characteristic) {
     using namespace serialization;

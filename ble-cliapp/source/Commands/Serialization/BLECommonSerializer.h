@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_BLE_COMMON_SERIALIZER_H_
 
 #include "Serialization/Serializer.h"
-#include "ble/blecommon.h"
+#include "ble/common/ble/blecommon.h"
 #include "Serialization/JSONOutputStream.h"
 
 template<>

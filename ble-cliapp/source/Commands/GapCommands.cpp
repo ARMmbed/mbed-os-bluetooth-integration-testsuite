@@ -35,6 +35,12 @@
 
 using mbed::util::SharedPointer;
 
+using ble::Gap;
+using ble::GattClient;
+using ble::GattServer;
+using ble::SecurityManager;
+
+
 // isolation ...
 namespace {
 

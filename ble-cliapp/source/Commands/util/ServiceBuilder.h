@@ -14,10 +14,10 @@
 #ifndef BLE_CLIAPP_UTIL_SERVICE_BUILDER_
 #define BLE_CLIAPP_UTIL_SERVICE_BUILDER_
 
-#include "ble/GattService.h"
-#include "ble/GattCharacteristic.h"
-#include "ble/GattAttribute.h"
-#include "ble/UUID.h"
+#include "ble/common/ble/GattService.h"
+#include "ble/common/ble/GattCharacteristic.h"
+#include "ble/common/ble/GattAttribute.h"
+#include "ble/common/ble/UUID.h"
 #include "ble/GattServer.h"
 #include "detail/RAIIGattAttribute.h"
 #include "detail/RAIIGattCharacteristic.h"
@@ -27,7 +27,7 @@ class ServiceBuilder {
 
 public:
     ServiceBuilder(const UUID& uuid) :
-        service(new detail::RAIIGattService(uuid)), currentCharacteristic(NULL), currentDescriptor(NULL) {
+        service(new ::detail::RAIIGattService(uuid)), currentCharacteristic(NULL), currentDescriptor(NULL) {
     }
 
     ~ServiceBuilder() {
@@ -38,7 +38,7 @@ public:
 
     void declareCharacteristic(const UUID& characteristicUUID) {
         commit();
-        currentCharacteristic = new detail::RAIIGattCharacteristic(characteristicUUID);
+        currentCharacteristic = new ::detail::RAIIGattCharacteristic(characteristicUUID);
     }
 
     bool setCharacteristicValue(const container::Vector<uint8_t>& characteristicValue) {
@@ -91,7 +91,7 @@ public:
             currentCharacteristic->addDescriptor(currentDescriptor);
         }
 
-        currentDescriptor = new detail::RAIIGattAttribute(descriptorUUID);
+        currentDescriptor = new ::detail::RAIIGattAttribute(descriptorUUID);
         return true;
     }
 
@@ -121,8 +121,8 @@ public:
         return currentDescriptor->setMaxLength(maxLen);
     }
 
-    detail::RAIIGattService* release() {
-        detail::RAIIGattService* toReturn = service;
+    ::detail::RAIIGattService* release() {
+        ::detail::RAIIGattService* toReturn = service;
         service = NULL;
         return toReturn;
     }
@@ -142,9 +142,9 @@ private:
     ServiceBuilder(const ServiceBuilder&);
     ServiceBuilder& operator=(const ServiceBuilder&);
 
-    detail::RAIIGattService* service;
-    detail::RAIIGattCharacteristic* currentCharacteristic;
-    detail::RAIIGattAttribute* currentDescriptor;
+    ::detail::RAIIGattService* service;
+    ::detail::RAIIGattCharacteristic* currentCharacteristic;
+    ::detail::RAIIGattAttribute* currentDescriptor;
 
 };
 

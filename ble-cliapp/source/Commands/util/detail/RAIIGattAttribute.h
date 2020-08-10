@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_UTIL_DETAIL_RAII_GATT_ATTRIBUTE_H_
 
 #include <stdint.h>
-#include <ble/GattAttribute.h>
+#include "ble/common/ble/GattAttribute.h"
 #include "util/Vector.h"
 
 namespace detail {

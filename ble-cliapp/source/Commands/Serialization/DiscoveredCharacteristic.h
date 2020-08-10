@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_DISCOVERED_CHARACTERISTIC_SERIALIZER_H_
 
 #include "Serialization/Serializer.h"
-#include "ble/DiscoveredCharacteristic.h"
+#include "ble/common/ble/DiscoveredCharacteristic.h"
 #include "Serialization/JSONOutputStream.h"
 
 /**

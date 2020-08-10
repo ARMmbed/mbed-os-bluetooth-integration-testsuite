@@ -15,7 +15,7 @@
 #include <cstdio>
 #include <stddef.h>
 
-#include "UUID.h"
+#include "Serialization/UUID.h"
 #include "Hex.h"
 #include "Serialization/Serializer.h"
 

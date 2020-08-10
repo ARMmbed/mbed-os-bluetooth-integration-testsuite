@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_GATT_CALLABCK_PARAM_TYPES_SERIALIZER_H_
 
 #include "Serialization/Serializer.h"
-#include "ble/DiscoveredCharacteristic.h"
+#include "ble/common/ble/DiscoveredCharacteristic.h"
 
 #include "Serialization/JSONOutputStream.h"
 
