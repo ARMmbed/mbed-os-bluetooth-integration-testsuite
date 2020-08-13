@@ -1080,6 +1080,125 @@ DECLARE_CMD(ScanForAddress) {
     };
 };
 
+DECLARE_CMD(ScanForData) {
+    CMD_NAME("scanForData")
+    CMD_ARGS(
+        CMD_ARG("RawData_t", "data", ""),
+        CMD_ARG("uint32_t", "timeout", "")
+    )
+    CMD_HANDLER(
+        container::Vector<uint8_t>& data,
+        uint32_t timeout,
+        CommandResponsePtr& response
+    ) {
+        startProcedure<ScanForDataProcedure>(data, timeout, response);
+    }
+
+    struct ScanForDataProcedure: public AsyncProcedure, Gap::EventHandler {
+        ScanForDataProcedure(
+            container::Vector<uint8_t> data,
+            uint32_t timeout,
+            CommandResponsePtr& response
+        ) : AsyncProcedure(response, timeout), _data(data)
+        {
+            gap().setEventHandler(this);
+            ble_error_t err = gap().startScan();
+            if (err != BLE_ERROR_NONE) {
+                response->faillure(err);
+                terminate();
+            }
+
+            timer.reset();
+            timer.start();
+
+            // Define success = scan started. Results (can be empty) will be in an array
+            response->success();
+            response->getResultStream() << startArray;
+        }
+
+        // AsyncProcedure implementation
+
+        virtual ~ScanForDataProcedure(){
+            // revert to default event handler
+            enable_event_handling();
+        }
+
+        virtual bool doStart() {
+            return true;
+        }
+
+        virtual void doWhenTimeout() {
+            timer.stop();
+            gap().stopScan();
+            response->getResultStream() << endArray;
+        }
+
+        // Gap::EventHandler implementation
+
+        virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
+        {
+            if (memcmp(event.getPayload().data(), _data.begin(), _data.size())) {
+                return;
+            }
+
+            JSONOutputStream& os = response->getResultStream();
+
+            os << startObject <<
+               key("time") << (int32_t) timer.read_ms() <<
+               key("connectable") << event.getType().connectable() <<
+               key("scannable") << event.getType().scannable_advertising() <<
+               key("scan_response") << event.getType().scan_response() <<
+               key("directed") << event.getType().directed_advertising() <<
+               key("legacy") << event.getType().legacy_advertising() <<
+               key("rssi") << event.getRssi() <<
+               key("peer_address_type") << event.getPeerAddressType();
+
+            if (event.getPeerAddressType() != ble::peer_address_type_t::ANONYMOUS) {
+                os << key("peer_address") << event.getPeerAddress();
+            }
+
+            if (event.getType().directed_advertising()) {
+                os << key("direct_address_type") << event.getDirectAddressType() <<
+                   key("direct_address") << event.getDirectAddress();
+            }
+
+            if (event.getType().legacy_advertising() == false) {
+                os << key("sid") << event.getSID() <<
+                   key("tx_power") << event.getTxPower() <<
+                   key("primary_phy") << event.getPrimaryPhy() <<
+                   key("secondary_phy") << event.getSecondaryPhy() <<
+                   key("data_status");
+
+                switch (event.getType().data_status().value()) {
+                    case ble::advertising_data_status_t::COMPLETE:
+                        os << "COMPLETE";
+                        break;
+                    case ble::advertising_data_status_t::INCOMPLETE_MORE_DATA:
+                        os << "INCOMPLETE_MORE_DATA";
+                        break;
+                    case ble::advertising_data_status_t::INCOMPLETE_DATA_TRUNCATED:
+                        os << "INCOMPLETE_DATA_TRUNCATED";
+                        break;
+                    default:
+                        os << "unknown";
+                        break;
+                }
+
+                if (event.isPeriodicIntervalPresent()) {
+                    os << key("periodic_interval") << event.getPeriodicInterval();
+                }
+            }
+
+            os <<   key("payload") << event.getPayload() <<
+               endObject;
+        }
+
+    private:
+        container::Vector<uint8_t> _data;
+        mbed::Timer timer;
+    };
+};
+
 DECLARE_CMD(StopScan) {
     CMD_NAME("stopScan")
     CMD_HANDLER(CommandResponsePtr& response) {
@@ -1533,6 +1652,7 @@ static const Command* const _cmd_handlers[] = {
     CMD_INSTANCE(SetScanParameters),
     CMD_INSTANCE(StartScan),
     CMD_INSTANCE(ScanForAddress),
+    CMD_INSTANCE(ScanForData),
     CMD_INSTANCE(StopScan),
     CMD_INSTANCE(CreateSync),
     CMD_INSTANCE(CreateSyncFromList),

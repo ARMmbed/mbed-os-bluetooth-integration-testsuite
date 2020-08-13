@@ -279,7 +279,7 @@ class BleDevice(Device):
             "applyScanRespFromBuilder", "startAdvertising", "stopAdvertising", "isAdvertisingActive",
             "setPeriodicAdvertisingParameters", "setPeriodicAdvertisingPayload", "startPeriodicAdvertising",
             "stopPeriodicAdvertising", "isPeriodicAdvertisingActive", "setScanParameters",
-            "startScan", "scanForAddress", "stopScan", "createSync", "createSyncFromList",
+            "startScan", "scanForAddress", "scanForData", "stopScan", "createSync", "createSyncFromList",
             "cancelCreateSync", "terminateSync", "addDeviceToPeriodicAdvertiserList",
             "removeDeviceFromPeriodicAdvertiserList", "clearPeriodicAdvertiserList",
             "getMaxPeriodicAdvertiserListSize", "connect", "waitForConnection",
