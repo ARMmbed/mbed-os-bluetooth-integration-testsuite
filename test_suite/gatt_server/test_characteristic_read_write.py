@@ -314,3 +314,27 @@ def test_client_write_invalid_attribute(central, peripheral):
         0xFFEE,
         "AA"
     )
+
+@pytest.mark.ble41
+@pytest.mark.parametrize('length', [60, 200])
+def test_write_characteristic_over_mtu(central, peripheral, length):
+    """It should be possible for a client to write the value of a characteristic if the characteristic is writable."""
+    characteristic_handle = instantiate_service(peripheral, ["read", "write"], "AA" * length)
+    client_connection_handle, server_connection_handle = gap_connect(central, peripheral)
+
+    # write the new value
+    new_value = "BB" * length
+
+    central.gattClient.write(
+        client_connection_handle,
+        characteristic_handle,
+        new_value
+    )
+
+    # check that the value is correct
+    value_read_from_client = central.gattClient.readCharacteristicValue(
+        client_connection_handle,
+        characteristic_handle
+    ).result["data"]
+
+    assert new_value == value_read_from_client
