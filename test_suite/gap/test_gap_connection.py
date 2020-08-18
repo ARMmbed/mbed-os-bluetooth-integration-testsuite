@@ -44,7 +44,7 @@ def test_cancel_connect(central, peripheral):
     central.gap.startConnecting(peripheral_address["address_type"], peripheral_address["address"])
 
     sleep(0.5)
-    central.gap.cancelConnect(peripheral_address["address_type"], peripheral_address["address"])
+    central.gap.cancelConnect()
     sleep(0.5)
 
     # after we already stopped trying to connect start advertising but expect to fail to connect
@@ -61,7 +61,7 @@ def test_cancel_connect_too_late(central, peripheral):
     central_handle, peripheral_handle = gap_connect(central, peripheral)
 
     # we cancel after the connection completes and it should have no effect
-    central.gap.cancelConnect(peripheral_address["address_type"], peripheral_address["address"]).result
+    central.gap.cancelConnect().result
 
     sleep(2)
 
