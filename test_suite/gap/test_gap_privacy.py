@@ -313,7 +313,7 @@ def test_non_resolved_address_with_resolve_and_forward(peripheral, central, peri
 
 
 @pytest.mark.ble42
-def test_reject_non_resolved_address_with_no_bond(peripheral, central):
+def test_reject_non_resolved_address_with_no_bond_accepts_connection(peripheral, central):
     """validate that when a peripheral with privacy enabled, the privacy policy
     set to REJECT_NON_RESOLVED_ADDRESS and no bond is connected by an unknown
     privacy enabled then connection is accepted"""
