@@ -1388,15 +1388,9 @@ DECLARE_CMD(WaitForDisconnection) {
 
 DECLARE_CMD(CancelConnect) {
     CMD_NAME("cancelConnect")
-    CMD_ARGS(
-        CMD_ARG("ble::peer_address_type_t::type", "peerAddressType", ""),
-        CMD_ARG("ble::address_t", "peerAddress", "")
-    )
     CMD_HANDLER(
-        ble::peer_address_type_t::type peerAddressType,
-        ble::address_t &peerAddress,
         CommandResponsePtr& response) {
-        ble_error_t err = gap().cancelConnect(peerAddressType, peerAddress);
+        ble_error_t err = gap().cancelConnect();
         reportErrorOrSuccess(response, err);
     }
 };
