@@ -175,8 +175,12 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 void app_start(int, char*[])
 {
-    BLE& ble = BLE::Instance(BLE::DEFAULT_INSTANCE);
+    BLE& ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
+
+    // Ensure rxBuffer is constructed before the interrupt touches it otherwise
+    // it causes an hardfault in debug mode. 
+    rxBuffer.reset();
 
     //configure serial port
     get_serial().baud(115200);    // This is default baudrate for our test applications. 230400 is also working, but not 460800. At least with k64f.
