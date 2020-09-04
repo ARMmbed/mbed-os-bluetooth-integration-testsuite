@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_UTIL_DETAIL_RAII_GATT_SERVICE_H_
 
 #include <stdint.h>
-#include "ble/common/ble/GattService.h"
+#include "ble/gatt/GattService.h"
 #include "util/Vector.h"
 #include "RAIIGattCharacteristic.h"
 

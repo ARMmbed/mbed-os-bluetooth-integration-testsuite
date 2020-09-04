@@ -14,7 +14,7 @@
 #ifndef BLE_CLIAPP_SCANPARAMETERS_H
 #define BLE_CLIAPP_SCANPARAMETERS_H
 
-#include "ble/common/ble/gap/ScanParameters.h"
+#include "ble/gap/ScanParameters.h"
 #include "CLICommand/CommandSuite.h"
 
 class ScanParametersCommandSuiteDescription {

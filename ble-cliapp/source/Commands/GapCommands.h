@@ -15,8 +15,8 @@
 #define BLE_CLIAPP_GAP_COMMANDS_H_
 
 #include "CLICommand/CommandSuite.h"
-#include "ble/FunctionPointerWithContext.h"
-#include "ble/common/ble/gap/Events.h"
+#include "ble/common/FunctionPointerWithContext.h"
+#include "ble/gap/Events.h"
 
 class GapCommandSuiteDescription {
 

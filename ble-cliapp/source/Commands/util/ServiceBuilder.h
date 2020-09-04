@@ -14,10 +14,10 @@
 #ifndef BLE_CLIAPP_UTIL_SERVICE_BUILDER_
 #define BLE_CLIAPP_UTIL_SERVICE_BUILDER_
 
-#include "ble/common/ble/GattService.h"
-#include "ble/common/ble/GattCharacteristic.h"
-#include "ble/common/ble/GattAttribute.h"
-#include "ble/common/ble/UUID.h"
+#include "ble/gatt/GattService.h"
+#include "ble/gatt/GattCharacteristic.h"
+#include "ble/gatt/GattAttribute.h"
+#include "ble/common/UUID.h"
 #include "ble/GattServer.h"
 #include "detail/RAIIGattAttribute.h"
 #include "detail/RAIIGattCharacteristic.h"
