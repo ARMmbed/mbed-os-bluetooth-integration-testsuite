@@ -238,7 +238,7 @@ private:
 		return handle;
 	}
 
-	ms_time_t get_time()
+    ms_time_t get_time()
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             _timer.elapsed_time()
