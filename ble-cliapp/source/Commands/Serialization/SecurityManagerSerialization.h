@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_SECURITY_MANAGER_SERIALIZER_H_
 
 #include "ble/SecurityManager.h"
-#include "ble/common/ble/BLETypes.h"
+#include "ble/common/BLETypes.h"
 #include "Serialization/JSONOutputStream.h"
 #include "Serialization/Serializer.h"
 

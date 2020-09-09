@@ -14,7 +14,7 @@
 #ifndef BLE_CLIAPP_CONNECTIONPARAMETERS_H
 #define BLE_CLIAPP_CONNECTIONPARAMETERS_H
 
-#include "ble/common/ble/gap/ConnectionParameters.h"
+#include "ble/gap/ConnectionParameters.h"
 #include "CLICommand/CommandSuite.h"
 
 class ConnectionParametersCommandSuiteDescription {

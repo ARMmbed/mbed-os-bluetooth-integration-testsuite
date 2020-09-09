@@ -140,7 +140,7 @@ private:
 	void update_ticker(ms_time_t ms_delay) {
 		_timed_event_pending = true;
 		_ticker.detach();
-		_ticker.attach(mbed::callback(this, &EventQueueClassic::updateTime), ((float) ms_delay / 1000));
+		_ticker.attach(mbed::callback(this, &EventQueueClassic::updateTime), std::chrono::milliseconds(ms_delay));
 	}
 
 	void update_ticker(q_node_t* ref, ms_time_t ms_delay) {
@@ -180,7 +180,7 @@ private:
 
 	void updateTime() {
 		CriticalSection critical_section;
-		ms_time_t elapsed_time = _timer.read_ms();
+		ms_time_t elapsed_time = get_time();
 		_timed_event_pending = false;
 		_timer.stop();
 		_timer.reset();
@@ -197,7 +197,7 @@ private:
 			event_it->set_ms_remaining_time(ms_period);
 			_events_queue.update(event_it);
 		} else {
-			int elapsed_time = _timer.read_ms();
+			int elapsed_time = get_time();
 			event_it->set_ms_remaining_time(elapsed_time + ms_period);
 			_events_queue.update(event_it);
 			update_ticker(event_it.get_node(), ms_period);
@@ -228,7 +228,7 @@ private:
 			return _events_queue.push(event).get_node();
 		}
 
-		int elapsed_time = _timer.read_ms();
+		int elapsed_time = get_time();
 
 		// update remaining time and post the event
 		event.set_ms_remaining_time(ms_delay + elapsed_time);
@@ -237,6 +237,13 @@ private:
 
 		return handle;
 	}
+
+    ms_time_t get_time()
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            _timer.elapsed_time()
+        ).count();
+    }
 
 	priority_queue_t _events_queue;
 	mbed::Ticker _ticker;

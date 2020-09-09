@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #include "Serialization/Serializer.h"
-#include "ble/common/ble/GattCharacteristic.h"
+#include "ble/gatt/GattCharacteristic.h"
 #include "Serialization/JSONOutputStream.h"
 
 template<>

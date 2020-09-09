@@ -15,7 +15,7 @@
 #define BLE_CLIAPP_UTIL_DETAIL_RAII_GATT_CHARACTERISTIC_H_
 
 #include <stdint.h>
-#include "ble/common/ble/GattCharacteristic.h"
+#include "ble/gatt/GattCharacteristic.h"
 #include "util/Vector.h"
 #include "RAIIGattAttribute.h"
 

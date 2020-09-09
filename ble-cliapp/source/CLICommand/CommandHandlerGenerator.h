@@ -22,7 +22,7 @@
  * long as the arguments of the handler implement the serialization protocol. 
  * 
  * For a Command of type T, if T::handler can be of the form 
- * void(A1, A2,...,A9, const CommandResponsePtr&) as long as A1...A9 implement 
+ * void(Arg1, Arg2,...,Arg9, const CommandResponsePtr&) as long as Arg1...Arg9 implement 
  * the serialization protocol. 
  * 
  * The entry handler with the form void(const CommandArgs&, const CommandResponsePtr&) 
@@ -131,7 +131,7 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect one argument of type A0, this 
+     * @detail In this form, the real_handler expect one argument of type Arg0, this 
      * argument is deserialized first then if the deserialization was a success, the 
      * function is called with the deserialized argument and the command response.
      * 
@@ -141,11 +141,11 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0>
+    template<typename Arg0>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
@@ -157,7 +157,7 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect two argument of type A0 and A1, 
+     * @detail In this form, the real_handler expect two argument of type Arg0 and Arg1, 
      * these arguments are deserialized first then if the deserialization was a success, 
      * the function real_handler is called with the deserialized arguments and the 
      * command response as parameters.
@@ -168,17 +168,17 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1>
+    template<typename Arg0, typename Arg1>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
@@ -190,7 +190,7 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, A1 and A2, 
+     * @detail In this form, the real_handler expect three argument of type Arg0, Arg1 and Arg2, 
      * these arguments are deserialized first then if the deserialization was a success, 
      * the function real_handler is called with the deserialized arguments and the 
      * command response as parameters.
@@ -201,23 +201,23 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2>
+    template<typename Arg0, typename Arg1, typename Arg2>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
@@ -228,8 +228,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2 and A3. These arguments are deserialized first then if the 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2 and Arg3. These arguments are deserialized first then if the 
      * deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -239,29 +239,29 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
@@ -273,8 +273,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3 and A4. These arguments are deserialized first then if the 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3 and Arg4. These arguments are deserialized first then if the 
      * deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -284,35 +284,35 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
@@ -324,8 +324,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4 and A5. These arguments are deserialized first then if the 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4 and Arg5. These arguments are deserialized first then if the 
      * deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -335,41 +335,41 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
@@ -381,8 +381,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4, A5 and A6. These arguments are deserialized first then 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4, Arg5 and Arg6. These arguments are deserialized first then 
      * if the deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -392,48 +392,48 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5, 
-             typename A6>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, 
+             typename Arg6>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, A6, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
         }     
 
-        typename remove_reference<A6>::type arg6;
+        typename remove_reference<Arg6>::type arg6;
         if (!fromString(args[6], arg6)) {
             print_error(response, 6, argsDescription);
             return;
@@ -445,8 +445,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4, A5, A6 and A7. These arguments are deserialized first then 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4, Arg5, Arg6 and Arg7. These arguments are deserialized first then 
      * if the deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -456,54 +456,54 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5, 
-             typename A6, typename A7>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, 
+             typename Arg6, typename Arg7>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, A6, A7, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
         }     
 
-        typename remove_reference<A6>::type arg6;
+        typename remove_reference<Arg6>::type arg6;
         if (!fromString(args[6], arg6)) {
             print_error(response, 6, argsDescription);
             return;
         }
 
-        typename remove_reference<A7>::type arg7;
+        typename remove_reference<Arg7>::type arg7;
         if (!fromString(args[7], arg7)) {
             print_error(response, 7, argsDescription);
             return;
@@ -515,8 +515,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4, A5, A6, A7 and A8. These arguments are deserialized first then 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7 and Arg8. These arguments are deserialized first then 
      * if the deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -526,60 +526,60 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5, 
-             typename A6, typename A7, typename A8>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, 
+             typename Arg6, typename Arg7, typename Arg8>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, A6, A7, A8, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
         }     
 
-        typename remove_reference<A6>::type arg6;
+        typename remove_reference<Arg6>::type arg6;
         if (!fromString(args[6], arg6)) {
             print_error(response, 6, argsDescription);
             return;
         }
 
-        typename remove_reference<A7>::type arg7;
+        typename remove_reference<Arg7>::type arg7;
         if (!fromString(args[7], arg7)) {
             print_error(response, 7, argsDescription);
             return;
         }     
 
-        typename remove_reference<A8>::type arg8;
+        typename remove_reference<Arg8>::type arg8;
         if (!fromString(args[8], arg8)) {
             print_error(response, 8, argsDescription);
             return;
@@ -591,8 +591,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4, A5, A6, A7, A8 and A9. These arguments are deserialized first then 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8 and Arg9. These arguments are deserialized first then 
      * if the deserialization was a success, the function real_handler is called 
      * with the deserialized arguments and the command response as parameters.
      * 
@@ -602,66 +602,66 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5, 
-             typename A6, typename A7, typename A8, typename A9>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, 
+             typename Arg6, typename Arg7, typename Arg8, typename Arg9>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
         }     
 
-        typename remove_reference<A6>::type arg6;
+        typename remove_reference<Arg6>::type arg6;
         if (!fromString(args[6], arg6)) {
             print_error(response, 6, argsDescription);
             return;
         }
 
-        typename remove_reference<A7>::type arg7;
+        typename remove_reference<Arg7>::type arg7;
         if (!fromString(args[7], arg7)) {
             print_error(response, 7, argsDescription);
             return;
         }     
 
-        typename remove_reference<A8>::type arg8;
+        typename remove_reference<Arg8>::type arg8;
         if (!fromString(args[8], arg8)) {
             print_error(response, 8, argsDescription);
             return;
         }     
 
-        typename remove_reference<A9>::type arg9;
+        typename remove_reference<Arg9>::type arg9;
         if (!fromString(args[9], arg9)) {
             print_error(response, 9, argsDescription);
             return;
@@ -673,8 +673,8 @@ private:
 
     /**
      * @brief Generated handler for the Command handler real_handler.
-     * @detail In this form, the real_handler expect three argument of type A0, 
-     * A1, A2, A3, A4, A5, A6, A7, A8, A9 and A100. These arguments are deserialized 
+     * @detail In this form, the real_handler expect three argument of type Arg0, 
+     * Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9 and Arg100. These arguments are deserialized 
      * first then if the deserialization was a success, the function real_handler 
      * is called with the deserialized arguments and the command response as 
      * parameters.
@@ -685,72 +685,72 @@ private:
      * unserialized.
      * @param argsDescription Accessor to the command argsDescription. 
      */
-    template<typename A0, typename A1, typename A2, typename A3, typename A4, typename A5, 
-             typename A6, typename A7, typename A8, typename A9, typename A10>
+    template<typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, 
+             typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10>
     static void generated_handler(const CommandArgs& args, const CommandResponsePtr& response, 
-                        void(*real_handler)(A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, const CommandResponsePtr&),
+                        void(*real_handler)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7, Arg8, Arg9, Arg10, const CommandResponsePtr&),
                         ConstArray<CommandArgDescription> (*argsDescription)()) { 
-        typename remove_reference<A0>::type arg0;
+        typename remove_reference<Arg0>::type arg0;
         if (!fromString(args[0], arg0)) {
             print_error(response, 0, argsDescription);
             return;
         }
 
-        typename remove_reference<A1>::type arg1;
+        typename remove_reference<Arg1>::type arg1;
         if (!fromString(args[1], arg1)) {
             print_error(response, 1, argsDescription);
             return;
         }        
 
-        typename remove_reference<A2>::type arg2;
+        typename remove_reference<Arg2>::type arg2;
         if (!fromString(args[2], arg2)) {
             print_error(response, 2, argsDescription);
             return;
         }        
 
-        typename remove_reference<A3>::type arg3;
+        typename remove_reference<Arg3>::type arg3;
         if (!fromString(args[3], arg3)) {
             print_error(response, 3, argsDescription);
             return;
         }        
 
-        typename remove_reference<A4>::type arg4;
+        typename remove_reference<Arg4>::type arg4;
         if (!fromString(args[4], arg4)) {
             print_error(response, 4, argsDescription);
             return;
         }     
 
-        typename remove_reference<A5>::type arg5;
+        typename remove_reference<Arg5>::type arg5;
         if (!fromString(args[5], arg5)) {
             print_error(response, 5, argsDescription);
             return;
         }     
 
-        typename remove_reference<A6>::type arg6;
+        typename remove_reference<Arg6>::type arg6;
         if (!fromString(args[6], arg6)) {
             print_error(response, 6, argsDescription);
             return;
         }
 
-        typename remove_reference<A7>::type arg7;
+        typename remove_reference<Arg7>::type arg7;
         if (!fromString(args[7], arg7)) {
             print_error(response, 7, argsDescription);
             return;
         }     
 
-        typename remove_reference<A8>::type arg8;
+        typename remove_reference<Arg8>::type arg8;
         if (!fromString(args[8], arg8)) {
             print_error(response, 8, argsDescription);
             return;
         }     
 
-        typename remove_reference<A9>::type arg9;
+        typename remove_reference<Arg9>::type arg9;
         if (!fromString(args[9], arg9)) {
             print_error(response, 9, argsDescription);
             return;
         }             
 
-        typename remove_reference<A10>::type arg10;
+        typename remove_reference<Arg10>::type arg10;
         if (!fromString(args[10], arg10)) {
             print_error(response, 10, argsDescription);
             return;

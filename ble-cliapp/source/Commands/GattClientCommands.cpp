@@ -13,8 +13,8 @@
  */
 
 #include "ble/BLE.h"
-#include "ble/common/ble/DiscoveredService.h"
-#include "ble/common/ble/DiscoveredCharacteristic.h"
+#include "ble/gatt/DiscoveredService.h"
+#include "ble/gatt/DiscoveredCharacteristic.h"
 
 
 #include "Serialization/Serializer.h"
