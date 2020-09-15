@@ -55,7 +55,7 @@ of the API.
 
 To run the test, two dedicated software components are needed: 
 * The bluetooth test suite: This repository
-* [ble-cliapp](https://github.com/ARMmbed/ble-cliapp): The RPC server running on
+* [ble-cliapp](../ble-cliapp): The RPC server running on
 the board. 
 
 The tests are written using [pytest](https://docs.pytest.org/en/stable/contents.html) 
@@ -72,6 +72,13 @@ cd venv
 source bin/activate
 ```
 
+Then install Python packages required to run the test suite:
+
+```
+<in the test suite folder>
+pip install -r requirements.txt
+```
+
 Boards supporting BLE are required as well. The most demanding test in these 
 test suite requires 3 boards to be connected to the machine running the test. 
 
@@ -82,7 +89,7 @@ test suite requires 3 boards to be connected to the machine running the test.
 
 * Compile the `ble-cliapp` application for the boards involved in the test and 
 flash the hardware with it. 
-* Run the command: `pytest`
+* Run the command: `python -m pytest`
 * The commands executed should be displayed in the terminal. 
 * At the end of the test suite execution a summary of the results is displayed 
   in the console.
@@ -91,16 +98,16 @@ flash the hardware with it.
 ## Run specific tests 
 
 Pytest allows you to run tests in a specific folder or file or individual tests:
-- folder: `pytest <folder name>`
-- test file: `pytest <file path>` 
-- test within a file: `pytest <file path>::<test name>`  
+- folder: `python -m pytest <folder name>`
+- test file: `python -m pytest <file path>` 
+- test within a file: `python -m pytest <file path>::<test name>`  
 
 
 Multiple tests cases, test files or test path can be specified. They are separated 
 by spaces.
 
 ```
-pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
+python -m pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
 ```
 
 ## List existing tests 
@@ -108,7 +115,7 @@ pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
 To list tests in the test suite use the command: 
 
 ```
-pytest --collect-only
+python -m pytest --collect-only
 ```
 
 ## Run test with markers
@@ -120,7 +127,7 @@ available:
 - ble50: Test of Bluetooth 5.0 features
 - smoketest: Small set of smoke tests.
 
-Run the command `pytest -m <marker name>` to run the test anotated with `marker name`.
+Run the command `python -m pytest -m <marker name>` to run the test anotated with `marker name`.
 
 ## Select targets type
 
@@ -131,7 +138,7 @@ with a `,`.
 For example, this command runs tests on `NRF52840_DK`: 
 
 ```sh
-pytest --platforms=NRF52840_DK
+python -m pytest --platforms=NRF52840_DK
 ```
 
 
