@@ -1025,7 +1025,7 @@ DECLARE_CMD(ScanForAddress) {
             JSONOutputStream& os = response->getResultStream();
 
             os << startObject <<
-                key("time") << std::chrono::duration_cast<std::chrono::milliseconds>(timer.elapsed_time()).count() <<
+                key("time") << (uint32_t) std::chrono::duration_cast<std::chrono::milliseconds>(timer.elapsed_time()).count() <<
                 key("connectable") << event.getType().connectable() <<
                 key("scannable") << event.getType().scannable_advertising() <<
                 key("scan_response") << event.getType().scan_response() <<
