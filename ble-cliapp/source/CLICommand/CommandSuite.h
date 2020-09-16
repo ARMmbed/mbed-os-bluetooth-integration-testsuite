@@ -81,7 +81,7 @@ public:
         cmd_add(
             SuiteDescription::name(),
             commandHandler,
-#ifdef ENABLE_COMMAND_INFO_AND_MANUAL
+#if ENABLE_COMMAND_INFO_AND_MANUAL
             SuiteDescription::info(),
             SuiteDescription::man()
 #else
@@ -113,12 +113,12 @@ private:
     }
 
 
-#ifndef ENABLE_BUILTIN_COMMANDS
+#if ENABLE_BUILTIN_COMMANDS == 0
     static ConstArray<const Command*> getBuiltinCommands() {
         return ConstArray<const Command*>();
     }
 
-#else // ifdef ENABLE_BUILTIN_COMMANDS
+#else
     static ConstArray<const Command*> getBuiltinCommands() {
         static const Command* const builtinCommands[] = {
             &CommandGenerator<HelpCommand>::command,
