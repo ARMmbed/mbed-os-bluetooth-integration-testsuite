@@ -147,6 +147,17 @@ def central(board_allocator: BoardAllocator):
 
 
 @pytest.fixture(scope="function")
+def central2(board_allocator: BoardAllocator):
+    device = board_allocator.allocate('central')
+    assert device is not None
+
+    device.ble.init()
+    yield device
+    device.ble.shutdown()
+    board_allocator.release(device)
+
+
+@pytest.fixture(scope="function")
 def peripheral2(board_allocator: BoardAllocator):
     device = board_allocator.allocate('peripheral2')
     assert device is not None

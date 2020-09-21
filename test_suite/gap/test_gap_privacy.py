@@ -16,6 +16,7 @@
 import pytest
 from time import sleep
 from common.ble_device import LEGACY_ADVERTISING_HANDLE, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED
+from common.gap_utils import start_scanning_for_data, start_advertising_of_type, connect_to_address
 from common.sm_utils import init_security_sessions
 
 RANDOM_NON_RESOLVABLE_MSB_RANGE = ['0', '1', '2', '3']
@@ -35,6 +36,12 @@ def perform_bonding_with_privacy_and_disconnect(peripheral, central):
 
     peripheral.gap.enablePrivacy(True)
     central.gap.enablePrivacy(True)
+    sleep(0.1)
+
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    peripheral.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    peripheral.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
     central_ss.connect(peripheral_ss)
 
@@ -58,36 +65,6 @@ def perform_bonding_with_privacy_and_disconnect(peripheral, central):
     sleep(0.5)
 
 
-def start_advertising_of_type(peripheral, advertising_type):
-    peripheral.advParams.setType(advertising_type)
-    peripheral.advParams.setPrimaryInterval(100, 100)
-    peripheral.gap.setAdvertisingParameters(LEGACY_ADVERTISING_HANDLE)
-
-    peripheral.advDataBuilder.clear()
-    peripheral.advDataBuilder.setFlags("LE_GENERAL_DISCOVERABLE")
-    advertising_data = peripheral.advDataBuilder.getAdvertisingData().result
-    peripheral.gap.applyAdvPayloadFromBuilder(LEGACY_ADVERTISING_HANDLE)
-
-    peripheral.gap.startAdvertising(LEGACY_ADVERTISING_HANDLE, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
-
-    return advertising_data
-
-
-def start_scanning_for_data(central, advertising_data):
-    central.scanParams.set1mPhyConfiguration(100, 100, True)
-    central.gap.setScanParameters()
-    scan_results = central.gap.scanForData(advertising_data, 300).result
-    return scan_results
-
-
-def connect_to_address(central, peripheral, peer_address_type, peer_address):
-    peripheral_connection_cmd = peripheral.gap.waitForConnection.setAsync()(10000)
-    central_connection = central.gap.connect(peer_address_type, peer_address).result
-    #sleep(0.1)
-    peripheral_connection = peripheral_connection_cmd.result
-    return central_connection
-
-
 def init_privacy(device):
     device.securityManager.init(True, False, "IO_CAPS_NONE", "*", True, "*")
     device.gap.enablePrivacy(True)
@@ -109,7 +86,7 @@ def test_privacy_random_resolvable_address(peripheral, central, advertising_type
     init_privacy(peripheral)
     init_privacy(central)
 
-    central.gap.setPeripheralPrivacyConfiguration(unresolvable, "DO_NOT_RESOLVE")
+    peripheral.gap.setPeripheralPrivacyConfiguration(unresolvable, "DO_NOT_RESOLVE")
 
     advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
@@ -117,13 +94,19 @@ def test_privacy_random_resolvable_address(peripheral, central, advertising_type
 
     scan_results = start_scanning_for_data(central, advertising_data)
 
-    for scan in scan_results:
-        assert scan["peer_address_type"] == "RANDOM"
-        if unresolvable:
-            assert address_is_random_non_resolvable(scan["peer_address"])
-        else:
-            assert address_is_random_resolvable(scan["peer_address"])
+    assert len(scan_results) > 0
 
+    at_least_one_resolved = False
+
+    for scan in scan_results:
+        if scan["peer_address_type"] == "RANDOM":
+            if unresolvable and advertising_type != "CONNECTABLE_UNDIRECTED":
+                assert address_is_random_non_resolvable(scan["peer_address"])
+            else:
+                assert address_is_random_resolvable(scan["peer_address"])
+            at_least_one_resolved = True
+
+    assert at_least_one_resolved
 
 @pytest.mark.ble42
 @pytest.mark.parametrize("advertising_type", [
@@ -144,10 +127,16 @@ def test_address_resolution_when_advertised(peripheral, central, advertising_typ
 
     scan_results = start_scanning_for_data(central, advertising_data)
 
+    at_least_one_resolved = False
+
     for scan in scan_results:
-        assert scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY"
-        assert address_is_random_resolvable(scan["peer_address"]) is False
-        assert address_is_random_non_resolvable(scan["peer_address"]) is False
+        if scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY":
+            if address_is_random_resolvable(scan["peer_address"]) is False:
+                if address_is_random_non_resolvable(scan["peer_address"]) is False:
+                    at_least_one_resolved = True
+                    break
+
+    assert at_least_one_resolved
 
 
 @pytest.mark.ble42
@@ -160,16 +149,16 @@ def test_connection_with_resolved_address(peripheral, central):
     advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
     central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FORWARD")
-
+    sleep(1)
     scan_results = start_scanning_for_data(central, advertising_data)
-    scan = scan_results[0]
 
-    assert scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY" or scan["peer_address_type"] == "PUBLIC_IDENTITY"
+    for scan in scan_results:
+        if scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY" or scan["peer_address_type"] == "PUBLIC_IDENTITY":
+            central_connection, _ = connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
-    central_connection = connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
-
-    assert central_connection["peer_address_type"] == scan["peer_address_type"]
-    assert central_connection["peer_address"] == scan["peer_address"]
+            assert central_connection["peer_address_type"] == scan["peer_address_type"]
+            assert central_connection["peer_address"] == scan["peer_address"]
+            break
 
 
 @pytest.mark.ble42
@@ -188,6 +177,7 @@ def test_central_not_resolve_policy(peripheral, central, advertising_type):
     advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
     central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
     scan_results = start_scanning_for_data(central, advertising_data)
 
@@ -206,6 +196,7 @@ def test_connection_to_non_resolved_address(peripheral, central):
     advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
     central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
     scan_results = start_scanning_for_data(central, advertising_data)
     scan = scan_results[0]
@@ -213,10 +204,7 @@ def test_connection_to_non_resolved_address(peripheral, central):
     assert scan["peer_address_type"] == "RANDOM"
     assert address_is_random_resolvable(scan["peer_address"])
 
-    central_connection = connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
-
-    assert central_connection["peer_address_type"] == "RANDOM"
-    assert central_connection["peer_address"] == scan["peer_address"]
+    connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
 
 @pytest.mark.ble42
@@ -237,6 +225,8 @@ def test_resolve_and_filter_unknown_address(peripheral, central, advertising_typ
     central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FILTER")
 
     scan_results = start_scanning_for_data(central, advertising_data)
+
+    assert len(scan_results)
 
     for scan in scan_results:
         assert scan["peer_address_type"] == "RANDOM"
@@ -259,6 +249,8 @@ def test_resolve_and_filter_bonded_peer(peripheral, central, advertising_type):
     central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FILTER")
 
     scan_results = start_scanning_for_data(central, advertising_data)
+
+    assert len(scan_results)
 
     for scan in scan_results:
         assert scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY"
@@ -307,6 +299,8 @@ def test_non_resolved_address_with_resolve_and_forward(peripheral, central, peri
 
     scan_results = start_scanning_for_data(central, advertising_data)
 
+    assert len(scan_results)
+
     for scan in scan_results:
         assert scan["peer_address_type"] == "RANDOM"
         assert address_is_random_resolvable(scan["peer_address"])
@@ -347,11 +341,16 @@ def test_reject_non_resolved_address_with_one_bond(peripheral, central, central2
     advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
     central2.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central2.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
     scan_results = start_scanning_for_data(central2, advertising_data)
     scan = scan_results[0]
 
-    central.gap.connect.withRetcode(-1)(scan["peer_address_type"], scan["peer_address"]).result
+    disconnection_cmd = peripheral.gap.waitForDisconnection.setAsync()(10000)
+
+    central2.gap.startConnecting(scan["peer_address_type"], scan["peer_address"]).result
+
+    assert disconnection_cmd.result
 
 
 @pytest.mark.ble42
@@ -376,6 +375,3 @@ def test_perform_pairing_procedure_policy(central, peripheral):
     # Accept request, pairing should complete successfully
     peripheral_ss.accept_pairing_request()
     peripheral_ss.expect_pairing_success()
-
-    # central_ss should see pairing complete successfully too
-    central_ss.expect_pairing_success()
