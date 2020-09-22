@@ -1,4 +1,16 @@
 {
+    "config": {
+        "enable-command-info-and-manual": {
+            "help": "Enable info and manual commands",
+            "value" : 1,
+            "macro_name": "ENABLE_COMMAND_INFO_AND_MANUAL"
+        },
+        "enable-built-in-commands": {
+            "help": "Enable built-in commands",
+            "value": 1,
+            "macro_name": "ENABLE_BUILTIN_COMMANDS"
+        }
+    },
     "macros": [
         "OS_TASKCNT=1",
         "OS_IDLESTKSIZE=32",
