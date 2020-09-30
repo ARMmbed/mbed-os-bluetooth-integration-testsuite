@@ -36,7 +36,6 @@ def perform_bonding_with_privacy_and_disconnect(peripheral, central):
 
     peripheral.gap.enablePrivacy(True)
     central.gap.enablePrivacy(True)
-    sleep(0.1)
 
     central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
     central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")

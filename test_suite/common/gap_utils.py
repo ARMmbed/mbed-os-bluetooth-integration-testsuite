@@ -245,7 +245,6 @@ def gap_connect(central, peripheral):
     advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
     scan = start_scanning_for_data(central, advertising_data)
-    sleep(0.1)
     assert len(scan) > 0
     central_connection, peripheral_connection = connect_to_address(
         central,
