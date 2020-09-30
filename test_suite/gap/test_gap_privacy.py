@@ -69,7 +69,7 @@ def init_privacy(device):
     device.gap.enablePrivacy(True)
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type, unresolvable", [
     ("CONNECTABLE_UNDIRECTED", True),
     ("SCANNABLE_UNDIRECTED", True),
@@ -107,7 +107,7 @@ def test_privacy_random_resolvable_address(peripheral, central, advertising_type
 
     assert at_least_one_resolved
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
      "CONNECTABLE_UNDIRECTED",
      # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -138,7 +138,7 @@ def test_address_resolution_when_advertised(peripheral, central, advertising_typ
     assert at_least_one_resolved
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 def test_connection_with_resolved_address(peripheral, central):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that resolves addresses
@@ -160,7 +160,7 @@ def test_connection_with_resolved_address(peripheral, central):
             break
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
      "CONNECTABLE_UNDIRECTED",
      # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -185,7 +185,7 @@ def test_central_not_resolve_policy(peripheral, central, advertising_type):
         assert address_is_random_resolvable(scan["peer_address"])
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 def test_connection_to_non_resolved_address(peripheral, central):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that do not resolves
@@ -206,7 +206,7 @@ def test_connection_to_non_resolved_address(peripheral, central):
     connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
      "CONNECTABLE_UNDIRECTED",
      # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -231,7 +231,7 @@ def test_resolve_and_filter_unknown_address(peripheral, central, advertising_typ
         assert scan["peer_address_type"] == "RANDOM"
         assert address_is_random_resolvable(scan["peer_address"])
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
     "CONNECTABLE_UNDIRECTED",
     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -257,7 +257,7 @@ def test_resolve_and_filter_bonded_peer(peripheral, central, advertising_type):
         assert address_is_random_non_resolvable(scan["peer_address"]) is False
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
      "CONNECTABLE_UNDIRECTED",
      # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -279,7 +279,7 @@ def test_resolve_and_filter_unknown_address_with_bond_present(peripheral, centra
     assert len(scan_results) == 0
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
      "CONNECTABLE_UNDIRECTED",
      # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
@@ -305,7 +305,7 @@ def test_non_resolved_address_with_resolve_and_forward(peripheral, central, peri
         assert address_is_random_resolvable(scan["peer_address"])
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 def test_reject_non_resolved_address_with_no_bond_accepts_connection(peripheral, central):
     """validate that when a peripheral with privacy enabled, the privacy policy
     set to REJECT_NON_RESOLVED_ADDRESS and no bond is connected by an unknown
@@ -324,7 +324,7 @@ def test_reject_non_resolved_address_with_no_bond_accepts_connection(peripheral,
 
     connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 def test_reject_non_resolved_address_with_one_bond(peripheral, central, central2):
     """validate that when a peripheral with:
           * privacy enabled
@@ -352,7 +352,7 @@ def test_reject_non_resolved_address_with_one_bond(peripheral, central, central2
     assert disconnection_cmd.result
 
 
-@pytest.mark.ble42
+@pytest.mark.ble41
 def test_perform_pairing_procedure_policy(central, peripheral):
     """validate that when a peripheral with privacy enabled with the policy
     PERFORM_PAIRING_PROCEDURE is connected by an unknown privacy enabled
