@@ -382,7 +382,17 @@ The `gap` module expose functions from the class `Gap`:
   - [`MacAddress`](#macaddress) **peer_address**: 
   - [`uint32_t`](#uint32_t) **timeout**: 
 * result: None
-* modeled after: `Gap::scanForAddress`
+
+
+### scanForData
+
+* invocation: `gap scanForData`
+* description: This will return only advertising reports of devices that advertise the given data payload.
+* arguments:
+  - [`MacAddress`](#macaddress) **peer_address**: 
+  - [`uint32_t`](#uint32_t) **timeout**:
+  - [`HexString`](#hexstring) **value**: The value of the advertising data payload to scan for. 
+* result: None
 
 
 ### stopScan
