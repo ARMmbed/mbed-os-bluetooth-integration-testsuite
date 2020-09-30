@@ -522,9 +522,55 @@ DECLARE_CMD(EnablePrivacyCommand) {
         CMD_ARG("bool", "enable", "Enable or disable the privacy")
     )
 
-    CMD_HANDLER(bool enable, CommandResponsePtr& response) {
-        reportErrorOrSuccess(response, gap().enablePrivacy(enable));
+    CMD_HANDLER(bool enable, CommandResponsePtr& response)
+    {
+        if (enable) {
+            startProcedure<EnablePrivacyProcedure>(response, 2000 /* timeout in ms */);
+        } else {
+            reportErrorOrSuccess(response, gap().enablePrivacy(false));
+        }
     }
+
+    struct EnablePrivacyProcedure : public AsyncProcedure, Gap::EventHandler {
+        EnablePrivacyProcedure(
+            const SharedPointer<CommandResponse>& response,
+            uint32_t procedureTimeout
+        ) : AsyncProcedure(response, procedureTimeout)
+        {
+        }
+
+        virtual ~EnablePrivacyProcedure()
+        {
+            // revert to default event handler
+            enable_event_handling();
+        }
+
+        virtual bool doStart()
+        {
+            gap().setEventHandler(this);
+            ble_error_t result = gap().enablePrivacy(true);
+            if (result != BLE_ERROR_NONE) {
+                reportErrorOrSuccess(
+                    response,
+                    result
+                );
+                return false;
+            }
+            return true;
+        }
+
+        void onPrivacyEnabled()
+        {
+            response->success();
+            terminate();
+        }
+
+        virtual void doWhenTimeout() {
+            response->faillure(BLE_ERROR_INTERNAL_STACK_FAILURE);
+            terminate();
+        }
+    };
+
 };
 
 DECLARE_CMD(SetPeripheralPrivacyConfigurationCommand) {
