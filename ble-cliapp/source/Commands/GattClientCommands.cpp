@@ -998,6 +998,43 @@ DECLARE_CMD(ListenHVXCommand) {
     };
 };
 
+struct GattEventHandler
+{
+    void whenHVX(const GattHVXCallbackParams* hvx_event) {
+        using namespace serialization;
+        JSONEventStream os;
+
+        os << startObject <<
+            key("connHandle") << hvx_event->connHandle <<
+            key("handle") << hvx_event->handle <<
+            key("type") << hvx_event->type <<
+            key("data");
+            serializeRawDataToHexString(os, hvx_event->data, (uint8_t) hvx_event->len) <<
+        endObject;
+    }
+};
+
+static GattEventHandler gatt_client_handler;
+
+DECLARE_CMD(UnsolicitedHVXCommand) {
+    CMD_NAME("enableUnsolicitedHVX")
+    CMD_HELP("Enable or disable unsolicited (ie: at any time) notification or indication events")
+
+    CMD_ARGS(
+        CMD_ARG("uint8_t", "enable", "True if unsolicited notification/indication events should be enabled, false if disabled")
+    )
+
+    CMD_HANDLER(uint8_t enable, CommandResponsePtr& response) {
+        if(enable) {
+            client().onHVX().add(makeFunctionPointer(&gatt_client_handler, &GattEventHandler::whenHVX));
+        } else {
+            client().onHVX().detach(makeFunctionPointer(&gatt_client_handler, &GattEventHandler::whenHVX));
+        }
+        response->success();
+    }
+
+};
+
 DECLARE_CMD(NegotiateAttMtu) {
     CMD_NAME("negotiateAttMtu")
     CMD_HELP("Request ATT_MTU negotiation.")
@@ -1089,5 +1126,6 @@ DECLARE_SUITE_COMMANDS(GattClientCommandSuiteDescription,
     CMD_INSTANCE(WriteCharacteristicDescriptorCommand),
     CMD_INSTANCE(WriteLongCharacteristicDescriptorCommand),
     CMD_INSTANCE(ListenHVXCommand),
+    CMD_INSTANCE(UnsolicitedHVXCommand),
     CMD_INSTANCE(NegotiateAttMtu)
 )
