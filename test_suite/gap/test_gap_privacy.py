@@ -78,7 +78,7 @@ def init_privacy(device):
     ("SCANNABLE_UNDIRECTED", False),
     ("NON_CONNECTABLE_UNDIRECTED", False),
 ])
-def test_privacy_random_resolvable_address(peripheral, central, advertising_type, unresolvable):
+def test_privacy_random_resolvable_and_nonresolvable_address(peripheral, central, advertising_type, unresolvable):
     """validate that when privacy is enabled and a peripheral use a random
     resolvable address then a random resolvable address is used for all
     advertising modes."""

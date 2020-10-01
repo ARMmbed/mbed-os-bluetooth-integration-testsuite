@@ -204,12 +204,16 @@ class RandomAdvDataPair:
 def start_advertising_of_type(peripheral, advertising_type):
     # params
     peripheral.advParams.setType(advertising_type)
-    peripheral.advParams.setPrimaryInterval(100, 100)
+    if advertising_type == "CONNECTABLE_UNDIRECTED":
+        peripheral.advParams.setPrimaryInterval(100, 100)
+    else:
+        peripheral.advParams.setPrimaryInterval(200, 400)
     peripheral.gap.setAdvertisingParameters(LEGACY_ADVERTISING_HANDLE)
 
     # payload
     peripheral.advDataBuilder.clear()
-    peripheral.advDataBuilder.setFlags("LE_GENERAL_DISCOVERABLE")
+    if advertising_type == "CONNECTABLE_UNDIRECTED":
+        peripheral.advDataBuilder.setFlags("LE_GENERAL_DISCOVERABLE")
     peripheral.advDataBuilder.setFlags("BREDR_NOT_SUPPORTED")
     rand_data = get_rand_data("MANUFACTURER_SPECIFIC_DATA")
     if len(rand_data) > 10:
