@@ -233,7 +233,7 @@ struct JSONEventStream : public JSONOutputStream {
     JSONEventStream(mbed::UnbufferedSerial& output = get_serial()) :
         JSONOutputStream(output)
     {
-        const char str[] = "<<< ";
+        const char str[] = "\r\n<<< ";
         output.write(str, strlen(str));
     }
 };
