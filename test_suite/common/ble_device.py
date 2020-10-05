@@ -298,7 +298,7 @@ class BleDevice(Device):
             "signedWriteWithoutResponse", "write", "writeLong", "reliableWrite",
             "readCharacteristicDescriptor", "readLongCharacteristicDescriptor",
             "writeCharacteristicDescriptor", "writeLongCharacteristicDescriptor",
-            "negotiateAttMtu"
+            "negotiateAttMtu", "enableUnsolicitedHVX"
         ],
         "gattServer": [
             "instantiateHRM", "updateHRMSensorValue", "declareService",
