@@ -1,19 +1,20 @@
 # BLE tests
 
-This repository contains a wide range of tests for 
-[mbed BLE](https://github.com/ARMmbed/mbed-os/tree/master/features/FEATURE_BLE).
-These tests are used to validate ports of the API.
+This repository contains a wide range of tests for validating ports of the
+[Mbed BLE API](https://github.com/ARMmbed/mbed-os/tree/master/features/FEATURE_BLE).
 
 <!-- TOC -->
 
-- [BLE tests](#ble-tests)
+<!--needs updating-->
+
 - [Principle of operation](#principle-of-operation)
 - [Requirements](#requirements)
 - [Running the tests](#running-the-tests)
-  - [Run specific tests](#run-specific-tests)
   - [List existing tests](#list-existing-tests)
-  - [Run test with markers](#run-test-with-markers)
-  - [Select targets type](#select-targets-type)
+  - [Run all tests](#run-all-tests)
+  - [Run specific tests](#run-specific-tests)
+  - [Run test by markers](#run-test-by-markers)
+  - [Select targets](#select-targets)
 - [Extending the test suite](#extending-the-test-suite)
   - [Test conventions](#test-conventions)
   - [Fixtures](#fixtures)
@@ -25,132 +26,124 @@ These tests are used to validate ports of the API.
 
 <!-- /TOC -->
 
-
 # Principle of operation
 
-Testing happen at system level on real hardware. The machine (a PC) running the 
-tests is connected to multiple boards running an RPC server of mbed BLE. Tests
-consist in a succession of commands being sent to the connected boards and 
-assertion of the results reported by the hardware. 
+Testing happens at system level on real hardware. The machine (a PC) running the
+tests is connected to multiple boards running a Remote Procedure Call (RPC) server of Mbed BLE. The tests
+send a succession of commands to the connected boards and
+assert the results reported by the hardware.
 
-For instance, a test validating that advertising work might be sumarized in the 
-following scenario: 
+For example, here is a test validating that advertising works:
 
-**Preconditions:** 2 devices are connected to the host. 
+**Preconditions:** Two devices are connected to the host: an observer and a broadcaster.
 
-1. The two devices, one observer and one broadcaster, are initialized. 
-2. The MAC address of the broadcaster is queried. 
-3. The broadcaster is asked to advertise
-4. The observer listen for advertisements comming from the MAC address of the 
-broadcaster. 
+The test:
 
-**PostCondition:** Advertising from the broadcaster should have been collected.
+1. Initialises both devices.
+2. Queries the MAC address of the broadcaster.
+3. Asks the broadcaster to advertise.
+4. The observer listens for advertisements coming from the MAC address of the
+broadcaster.
 
-To simplify the development of new tests, the test are coded in Python and 
-sending commands to the device under test is very similar to calling functions 
+**Postcondition:** Advertising from the broadcaster should have been collected.
+
+To simplify the development of new tests, the tests are coded in Python. Sending commands to the device under test is very similar to calling functions
 of the API.
 
+# Requirements
 
-# Requirements 
+The tests are written using [pytest](https://docs.pytest.org/en/stable/contents.html)
+and standard Mbed components list and flash the device under test.
 
-To run the test, two dedicated software components are needed: 
-* The bluetooth test suite: This repository
-* [ble-cliapp](../ble-cliapp): The RPC server running on
-the board. 
+To run the tests, you need two dedicated software components:
 
-The tests are written using [pytest](https://docs.pytest.org/en/stable/contents.html) 
-and standard mbed components are used to list and flash device under test. 
-To install required python packages run the command `pip install -r requirements.txt`.
+* The Bluetooth test suite: this repository.
 
-It is advised to use a virtual environment to prevent dependencies issues, to 
-create and run the virtual environment execute the following commands: 
+    To install required Python packages run the command `pip install -r requirements.txt`.
+
+    We recommend using a virtual environment to prevent dependencies issues. To
+    create and run the virtual environment:
+
+    ```sh
+    mkdir venv
+    virtualenv venv
+    cd venv
+    source bin/activate
+    ```
+
+* Boards supporting BLE. The most demanding test in these
+test suite requires three boards to be connected to the machine running the test.
+
+* [ble-cliapp](https://github.com/ARMmbed/ble-cliapp): The RPC server running on
+the board.
+
+    > **Note:** This documentation is **not** a reference of `ble-cliapp`. Consult the documentation of that project for more information.  
+
+# Running the tests
+
+## List existing tests
+
+To list tests in the test suite:
+
+```
+pytest --collect-only
+```
+
+## Run all tests
+
+1. Compile the `ble-cliapp` application for the boards you're using for testing.
+1. Flash the application to the boards.
+1. Run the command `pytest`.<!--where? In the same location as the mbed compile command?-->
+
+    The terminal displays the executed commands.
+1. When all tests have run, the console displays a summary of the results.
+
+## Run specific tests
+
+pytest allows you to run tests in a specific folder or file or individual tests:
+
+* Folder: `pytest <folder name>`
+* Test file: `pytest <file path>`
+* Test within a file: `pytest <file path>::<test name>`
+
+To use multiple tests cases, test files or test paths, separate them with spaces:
+
+```
+pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
+```
+
+## Run tests by markers
+<!--"run with" can imply the marker changes the test; "run by" implies selecting tests that have the marker, which I think is the case here-->
+
+Some of the tests has been annotated with a pytest marker:
+
+- `ble41`: Test of Bluetooth 4.1 features.
+- `ble42`: Test of Bluetooth 4.2 features.
+- `ble50`: Test of Bluetooth 5.0 features.
+- `smoketest`: Small set of smoke tests.
+
+To run the test annotated with `marker name`, run the command `pytest -m <marker name>`.
+
+## Select targets
+
+To select specific targets for the test, use the command line
+argument `--platforms=`. To specify multiple platforms, separate them with a comma `,`.<!--this isn't a type - it's a specific board, isn't it?-->
+
+For example, to run tests on `NRF52840_DK`:
 
 ```sh
-mkdir venv
-virtualenv venv
-cd venv 
-source bin/activate
+pytest --platforms=NRF52840_DK
 ```
-
-Then install Python packages required to run the test suite:
-
-```
-<in the test suite folder>
-pip install -r requirements.txt
-```
-
-Boards supporting BLE are required as well. The most demanding test in these 
-test suite requires 3 boards to be connected to the machine running the test. 
-
-> **Note:** This documentation is **not** a reference of `ble-cliapp`. Consult 
-> the documentation of that project to get more insight about it.
-
-# Running the tests 
-
-* Compile the `ble-cliapp` application for the boards involved in the test and 
-flash the hardware with it. 
-* Run the command: `python -m pytest`
-* The commands executed should be displayed in the terminal. 
-* At the end of the test suite execution a summary of the results is displayed 
-  in the console.
-
-
-## Run specific tests 
-
-Pytest allows you to run tests in a specific folder or file or individual tests:
-- folder: `python -m pytest <folder name>`
-- test file: `python -m pytest <file path>` 
-- test within a file: `python -m pytest <file path>::<test name>`  
-
-
-Multiple tests cases, test files or test path can be specified. They are separated 
-by spaces.
-
-```
-python -m pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
-```
-
-## List existing tests 
-
-To list tests in the test suite use the command: 
-
-```
-python -m pytest --collect-only
-```
-
-## Run test with markers
-
-Some of the tests has been annotated with a pytest marker. Four markers are 
-available: 
-- ble41: Test of Bluetooth 4.1 features
-- ble42: Test of Bluetooth 4.2 features
-- ble50: Test of Bluetooth 5.0 features
-- smoketest: Small set of smoke tests.
-
-Run the command `python -m pytest -m <marker name>` to run the test anotated with `marker name`.
-
-## Select targets type
-
-To select specific target types that should run the test, use the command line 
-argument `--platforms=`. Multiple platforms can be specified, they must be separated 
-with a `,`. 
-
-For example, this command runs tests on `NRF52840_DK`: 
-
-```sh
-python -m pytest --platforms=NRF52840_DK
-```
-
 
 ## Flash targets
 
-It is possible to flash targets with a binary before the test start. Use the 
-argument `--flash=`. A list of platform/binary pair can be defined using the syntax
-`platform:binary`. Multiple pairs can be specified, they must be separated 
-with a `,`. 
+To flash targets with a binary before the test starts, use `--flash=`.<!--do I have to? is that part of the steps you described above for test running? or is it if I have something else I need on the board, and I can skip this test?-->
 
-For example, this following command run tests on `NRF52840_DK` and flash the binary
-`ble-cliapp.hex` present in the working directory: 
+You can define a list of platform/binary pairs using the syntax
+`platform:binary`. To specify multiple pairs, separate them with a comma `,`.
+
+For example, to run tests on `NRF52840_DK` and flash the binary
+`ble-cliapp.hex` (already in the working directory):<!--doesn't it first flash and then run the tests?-->
 
 ```sh
 pytest --flash=NRF52840_DK:ble-cliapp.hex
@@ -158,39 +151,32 @@ pytest --flash=NRF52840_DK:ble-cliapp.hex
 
 ********************************************************************************
 
-# Extending the test suite 
+# Extending the test suite
 
-Mbed OS BLE test suite is built using pytest. We recomand reading the exhaustive 
-pytest [documentation](https://docs.pytest.org/en/stable/) when specific problems 
-not covered by this document need to be solved. 
+the Mbed OS BLE test suite is built using pytest. We recommend reading the [pytest documentation](https://docs.pytest.org/en/stable/) to solve problems
+not covered by this document.
 
+## Test conventions
 
-## Test conventions 
+To be discovered by pytest:
 
-Test files must start with the name `test` to be discovered by pytest. 
-Similarly, test functions name must start with the prefix `test`. 
+- Test files must start with the name `test`.<!--name here, prefix in the next line - are they really different things?-->
+- Test functions name must start with the prefix `test`.
 
+## Assertions
 
-## Assertions 
+pytest does not define an assertion library. To assert a condition, use the Python keyword `assert`.
 
-Unlike other xUnit tests framework, pytest does not define an assertion library.
-To assert a condition, just use the Python keyword `assert`.
+## Fixtures
 
+[Fixtures](https://docs.pytest.org/en/stable/fixture.html#fixture) inject dependency into a test function.
 
-## Fixtures 
+The key fixture used by the BLE test suite is `board_allocator`. It allocates boards at the beginning of the test session and releases them at the end. This fixture serves as a base to create test-specific fixtures, which need to set up the devices before the test start.
 
-[Fixtures](https://docs.pytest.org/en/stable/fixture.html#fixture) are a key 
-concept in pytest to inject dependency into a test function. 
-
-The key fixture used by the ble test suite is `board_allocator` which is 
-available for the whole test session. Boards can be allocated at the begining 
-of the test and release at its end. This fixture serves as a base to create test 
-specific fixtures which will set up the devices before the test start. 
-
-For instance consider the following fixture that returns a BLE peripheral: 
+For example, consider the following fixture that returns a BLE peripheral:
 
 ```python
-@pytest.fixture(scope="function") 
+@pytest.fixture(scope="function")
 def peripheral(board_allocator: BoardAllocator):
     device = board_allocator.allocate('peripheral')
     assert device is not None
@@ -201,19 +187,14 @@ def peripheral(board_allocator: BoardAllocator):
     board_allocator.release(device)
 ```
 
-The decorator declares a fixture with a function scope meaning the object returned
-is destroyed after the function that used it ends. 
-Then the function prototype accepts a `board_allocator` argument. It is automatically
-resolved by pytest to the `board_allocator` fixture. 
-Then a board is allocated and the BLE API is initialised.
-
-The device object is then returned to the pytest framework using the `yield` keyword. 
-
-The function is reentered at the end of the fixture scope and the board is released. 
-
+1. The decorator declares a fixture with a function scope, meaning the returned object is destroyed after the function that used it ends.
+1. The function prototype accepts a `board_allocator` argument, which pytest automatically resolves to the `board_allocator` fixture.
+1. A board is allocated and the BLE API is initialised.<!--who does the allocating?-->
+1. The device object is returned to the pytest framework using the `yield` keyword.<!--who does the returning?-->
+1. At the end of the fixture scope, the function is reentered and the board is released.<!--who reenters the function and releases the board?-->
 
 To inject a fixture into a test function, the test function must declare a parameter
-with the fixture name: 
+with the fixture name:
 
 ```python
 def test_something(peripheral):
@@ -223,59 +204,57 @@ def test_something(peripheral):
 
 ## Interacting with devices under test (DUT)
 
-Boards are passed to the test using the fixture mechanism.
+Boards are passed to the test using the fixture mechanism.<!--devices, boards and targets seem to be used interchangeably-->
 
-### Sending commands 
+### Sending commands
 
-> **Note:** Command syntax and returned values of `ble-cliapp` is documented in 
+> **Note:** Command syntax and returned values of `ble-cliapp` is documented in
 `ble-cliapp` documentation.
 
-It is possible to send "raw" commands using the `command` method exposed by 
-`BleDevice` objects: 
+To send "raw" commands, use the `command` method exposed by
+`BleDevice` objects:
 
 ```python
 dev.command("<command string>")
 ```
 
-However with ble devices it is also possible to access commands module like a 
-regular variable and invoke a command like a regular method: 
+With BLE devices, you can also access the commands module like a
+regular variable, and invoke a command like a regular method:
 
 
 ```python
 module = dev.module_name
-command = module.command_name 
+command = module.command_name
 command_response = command("arg1", "arg2", ...)
 
-# or 
+# or
 
 command_response = dev.module_name.command_name("arg1", "arg2", ...)
 ```
 
-### Handling response 
+### Handling response
 
-Response to a command can be captured in a variable. The type of this variable 
-will be `CommandResult`. 
+You can capture the response to a command in a variable of type `CommandResult`.
 
-Users can access the status of the response by accessing the member variable 
-`status`: 
+You can access the status of the response by accessing the member variable
+`status`:
 
 ```python
 command_response = dev.module_name.command_name("arg1", "arg2", ...)
 command_status = command_response.status
 ```
 
-If the command has a result then the member variable `result` expose it and if 
-the command has an error it is exposed by the member variable `error`. 
+If the command has a result, then the member variable `result` will expose it. If
+the command has an error, the member variable `error` will expose it.
 
-```python 
+```python
 command_result = command_response.result
 command_error = command_response.error
 ```
 
-`ble-cliapp` reports error and result in JSON. The parsing of these JSON bits is 
-made on behalf of the user so they can access the result like a regular Python 
-data structure: 
-
+`ble-cliapp` reports error and results in JSON. The parsing of these JSON bits is
+made on your behalf, so you can access the result like a regular Python
+data structure:
 
 | JSON          | Python    |
 |---------------|-----------|
@@ -288,71 +267,61 @@ data structure:
 | false         | False     |
 | null          | None      |
 
-As a consequence it is possible to handle response like a regular python data 
-structure and apply common operations like iteration on it. 
+Thanks to this, you can handle response like a regular Python data
+structure and apply common operations like iteration.
 
-As an example consider the command `getState` from the `gap` module. It returns 
-a JSON object containing two values named `advertising` and `connected`. It is 
-possible to use the result like a python object: 
+As an example, consider the command `getState` from the `gap` module. It returns
+a JSON object containing two values: `advertising` and `connected`. To use the result like a Python object:
 
 ```python
-# the extraction of the result happens inline right after the call by accessing 
+# the extraction of the result happens inline right after the call by accessing
 # the result member of the command response
 gap_state = dev.gap.getState().result
 assertEqual({ 'advertising': True, 'connected': True}, gap_state)
 ```
 
+### Expected return code
 
-### Expected return code 
+Every sent command is associated with an *expected return code*. If the response
+doesn't reply with the expected return code, then an exception is raised and the
+test ends.
 
-Every command sent is associated with an `expected return code`. If the response 
-doesn't reply the return code expected then an exception is raised and the 
-test ends. 
+By default, the expected return code associated with the command is 0 - the code
+for success. To test commands that will fail and return a negative error code (and carry an
+`error` variable), you need to set the correct expected return code using the function `withRetCode` from the BleCommand class.
 
-By default the expected return code associated with the command is 0; the code 
-for success. 
-
-To test commands which will fail and return a negative error code (and carry an 
-`error` variable) it is necessary to set the correct expected return code. 
-
-This can be achieved with the function `withRetCode` from the BleCommand class. 
-The method returning `self` it is possible to chain this call with the command 
-call. 
+The method returning `self` <!--is there a word missing here?-->you can chain this call with the command call.
 
 ```python
 response = dev.module_name.command_name.withRetcode(retcode)(arg1, arg2, ...)
 ```
 
+### Dealing with asynchronicity
 
-### Dealing with asynchronicity 
+When the script sends a command, it blocks further test execution until the DUT responds, or until a timeout is met. This is not very convenient when an
+operation involving devices on multiple ends has to be tested. For instance, in
+the context of BLE it wouldn't be possible in a single test to ensure that a
+connection happens on both ends (client and server) and fire the correct event.
 
-When a command is sent, the script block the execution until a response is 
-received from the DUT or a timeout is met. This is not very convenient when an 
-operation involving devices on multiple ends has to be tested. For instance, in 
-the context of BLE it wouldn't be possible in a single test to ensure that a 
-connection happens on both end (client and server) and fire the correct event. 
+It's better to fire asynchronous commands. These commands won't
+block the script execution when sending the command, but rather when accessing the
+content (member variables) of the response.
 
-Thankfully, it is possible to fire asynchronous commands, these commands won't 
-block the execution of the script when the command is sent but rather when the 
-content (member variables) of the response is accessed. 
-
-This behavior can be achieved by using the function `setAsync` of the BleCommand
-class: 
+Use the function `setAsync` of the BleCommand class:
 
 
 ```python
-# send a wait for connection command to a peripheral 
-# The command will not block the script until any member 
+# send a wait for connection command to a peripheral
+# The command will not block the script until any member
 # of peripheral_connection_response are accessed.
 peripheral_connection_response = peripheral.gap.waitForConnection.setAsync()(10000)
 
 # establish the connection from the central.
-# this is not an asynchronous command. 
+# this is not an asynchronous command.
 # It will block until the device respond
 central_connection_handle = central.gap.connect(connection_args).result["handle"]
 
-# Access the result on the peripheral 
+# Access the result on the peripheral
 # It will wait for the response if it hasn't been received yet.
-peripheral_conenction_handle = peripheral_connection_response.result["handle"] 
+peripheral_conenction_handle = peripheral_connection_response.result["handle"]
 ```
-
