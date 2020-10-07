@@ -28,3 +28,4 @@ def pytest_addoption(parser):
     parser.addoption('--binaries', action='store', help='Platform and associated binary in the form platform:binary. Multiple values are separated by a comma')
     parser.addoption('--serial_inter_byte_delay', action='store', help='Time in second between two bytes sent on the serial line (accepts floats)')
     parser.addoption('--serial_baudrate', action='store', help='Baudrate of the serial port used', default='115200')
+    parser.addoption('--command_delay', action='store', help='Delay in seconds before sending a command', default='0')
