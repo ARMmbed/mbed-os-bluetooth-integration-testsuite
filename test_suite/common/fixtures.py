@@ -47,6 +47,13 @@ def binaries(request):
     return {}
 
 
+@pytest.fixture(scope="session")
+def serial_inter_byte_delay(request):
+    if request.config.getoption('serial_inter_byte_delay'):
+        return float(request.config.getoption('serial_inter_byte_delay'))
+    return None
+
+
 class BoardAllocation:
     def __init__(self, description: Mapping[str, Any]):
         self.description = description
@@ -55,13 +62,14 @@ class BoardAllocation:
 
 
 class BoardAllocator:
-    def __init__(self, platforms_supported: List[str], binaries: Mapping[str, str]):
+    def __init__(self, platforms_supported: List[str], binaries: Mapping[str, str], serial_inter_byte_delay: float):
         mbed_ls = mbed_lstools.create()
         boards = mbed_ls.list_mbeds(filter_function=lambda m: m['platform_name'] in platforms_supported)
         self.board_description = boards
         self.binaries = binaries
         self.allocation = []  # type: List[BoardAllocation]
         self.flasher = None
+        self.serial_inter_byte_delay = serial_inter_byte_delay
         for desc in boards:
             self.allocation.append(BoardAllocation(desc))
 
@@ -78,7 +86,11 @@ class BoardAllocator:
                     alloc.flashed = True
 
                 # Create the serial connection
-                connection = SerialConnection(port=alloc.description["serial_port"], baudrate=115200)
+                connection = SerialConnection(
+                    port=alloc.description["serial_port"],
+                    baudrate=115200,
+                    inter_byte_delay=self.serial_inter_byte_delay
+                )
                 connection.open()
 
                 # Create the serial device
@@ -113,8 +125,8 @@ class BoardAllocator:
 
 
 @pytest.fixture(scope="session")
-def board_allocator(platforms: List[str], binaries: Mapping[str, str]):
-    yield BoardAllocator(platforms, binaries)
+def board_allocator(platforms: List[str], binaries: Mapping[str, str], serial_inter_byte_delay: float):
+    yield BoardAllocator(platforms, binaries, serial_inter_byte_delay)
 
 
 @pytest.fixture(scope="function")
