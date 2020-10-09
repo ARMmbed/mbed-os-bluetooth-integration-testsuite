@@ -188,7 +188,7 @@ def peripheral(board_allocator: BoardAllocator):
 
 1. The decorator declares a fixture with a function scope, meaning the returned object is destroyed after the function that used it ends.
 1. The function prototype accepts a `board_allocator` argument, which pytest automatically resolves to the `board_allocator` fixture.
-1. A board is allocated and the BLE API is initialised.<!--who does the allocating?-->
+1. The peripheral fixture allocates a board and initialises the BLE API.<!--who does the allocating?-->
 1. The peripheral fixture uses the `yield` keyword to return the device object to the pytest framework.
 1. pytest reenters the peripheral fixture, which continues the execution after the line yield device. The peripheral fixture then release the board using `board_allocator.release(device)`.
 
