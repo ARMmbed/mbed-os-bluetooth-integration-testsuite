@@ -152,7 +152,7 @@ pytest --flash=NRF52840_DK:ble-cliapp.hex
 
 # Extending the test suite
 
-the Mbed OS BLE test suite is built using pytest. We recommend reading the [pytest documentation](https://docs.pytest.org/en/stable/) to solve problems
+The Mbed OS BLE test suite is built using pytest. We recommend reading the [pytest documentation](https://docs.pytest.org/en/stable/) to solve problems
 not covered by this document.
 
 ## Test conventions
