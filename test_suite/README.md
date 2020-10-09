@@ -113,7 +113,6 @@ pytest <test folder1> <test folder 2> <file path> <file path>::<test name>
 ```
 
 ## Run tests by markers
-<!--"run with" can imply the marker changes the test; "run by" implies selecting tests that have the marker, which I think is the case here-->
 
 Some of the tests has been annotated with a pytest marker:
 
