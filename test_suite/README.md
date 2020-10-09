@@ -55,7 +55,7 @@ of the API.
 The tests are written using [pytest](https://docs.pytest.org/en/stable/contents.html)
 and standard Mbed components list and flash the device under test.
 
-To run the tests, you need two dedicated software components:
+To run the tests, you need:
 
 * The Bluetooth test suite: this repository.
 
