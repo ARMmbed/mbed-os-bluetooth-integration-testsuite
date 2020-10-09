@@ -136,7 +136,7 @@ pytest --platforms=NRF52840_DK
 
 ## Flash targets
 
-To flash targets with a binary before the test starts, use `--flash=`.<!--do I have to? is that part of the steps you described above for test running? or is it if I have something else I need on the board, and I can skip this test?-->
+If you did not use Mbed CLI to flash the binary to the targets before the test starts, use pytest to do it by passing the parameter `--flash=`.
 
 You can define a list of platform/binary pairs using the syntax
 `platform:binary`. To specify multiple pairs, separate them with a comma `,`.
