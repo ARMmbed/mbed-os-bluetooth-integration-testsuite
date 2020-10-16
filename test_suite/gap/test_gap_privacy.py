@@ -13,56 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import sleep
-
 import pytest
-
-from common.ble_device import BleDevice
-from common.fixtures import BoardAllocator
-from common.gap_utils import get_rand_data
-
-ADV_FLAGS = ["LE_GENERAL_DISCOVERABLE", "BREDR_NOT_SUPPORTED"]
+from time import sleep
+from common.ble_device import LEGACY_ADVERTISING_HANDLE, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED
+from common.gap_utils import start_scanning_for_data, start_advertising_of_type, connect_to_address
+from common.sm_utils import init_security_sessions
 
 RANDOM_NON_RESOLVABLE_MSB_RANGE = ['0', '1', '2', '3']
 RANDOM_RESOLVABLE_MSB_RANGE = ['4', '5', '6', '7']
-CONNECTION_PARAMS = [50, 100, 0, 600]
-CONNECTION_TIMEOUT = 10000
-CONNECTION_SCAN_PARAMS = [100, 100, 0, False]
-SCAN_TIMEOUT = 500
-SCAN_PARAMS = [10, 10, 0, 1]
-
-
-def init_device(device: BleDevice):
-    device.ble.init()
-    device.securityManager.init(True, False, 'IO_CAPS_NONE', '*', True, '*')
-    device.gap.enablePrivacy(True)
-    device.securityManager.setPairingRequestAuthorisation(False)
-
-
-def configure_peripheral(peripheral, rand_data):
-    # setup default privacy mode
-    peripheral.gap.setPeripheralPrivacyConfiguration(
-        False,
-        "PERFORM_PAIRING_PROCEDURE"
-    )
-
-    # setup advertising payload
-    peripheral.gap.clearAdvertisingPayload()
-    peripheral.gap.accumulateAdvertisingPayload("FLAGS", *ADV_FLAGS)
-    peripheral.gap.accumulateAdvertisingPayload("MANUFACTURER_SPECIFIC_DATA", rand_data)
-    peripheral.gap.setAdvertisingInterval(100)
-    peripheral.gap.setAdvertisingTimeout(0)
-
-    # Scan parameter
-    peripheral.gap.setScanParams(*SCAN_PARAMS)
-
-
-def get_connection_args(address_type, address):
-    connection_args = [address_type, address]
-    connection_args.extend(CONNECTION_PARAMS)
-    connection_args.extend(CONNECTION_SCAN_PARAMS)
-    connection_args.append(CONNECTION_TIMEOUT)
-    return connection_args
 
 
 def address_is_random_resolvable(address):
@@ -73,640 +31,346 @@ def address_is_random_non_resolvable(address):
     return address[0] in RANDOM_NON_RESOLVABLE_MSB_RANGE
 
 
-def address_matches_type(address, address_type):
-    if address_type == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE":
-        return address_is_random_resolvable(address)
-    else:
-        return address_is_random_non_resolvable(address)
+def perform_bonding_with_privacy_and_disconnect(peripheral, central):
+    central_ss, peripheral_ss = init_security_sessions(central, peripheral)
+
+    peripheral.gap.enablePrivacy(True)
+    central.gap.enablePrivacy(True)
+
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    peripheral.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    peripheral.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+
+    central_ss.connect(peripheral_ss)
+
+    # Always start peripheral_ss first
+    peripheral_ss.wait_for_event()
+    central_ss.start_pairing()
+
+    # We should get a request
+    peripheral_ss.expect_pairing_request()
+
+    # Accept request, pairing should complete successfully
+    peripheral_ss.accept_pairing_request()
+    peripheral_ss.expect_pairing_success()
+
+    # central_ss should see pairing complete successfully too
+    central_ss.expect_pairing_success()
+
+    central.gap.disconnect(peripheral_ss.connection_handle, "USER_TERMINATION")
+
+    # FIXME: needs event from the peripheral and central that they have been disconnected
+    sleep(0.5)
 
 
-def get_advertising_data(peripheral):
-    return peripheral.gap.getAdvertisingPayload().result['raw']
+def init_privacy(device):
+    device.securityManager.init(True, False, "IO_CAPS_NONE", "*", True, "*")
+    device.gap.enablePrivacy(True)
 
 
-def get_peripheral_address(central, peripheral):
-    # note advertising MUST be started; we cannot start and stop it in this
-    # function as the address may changed if it is restarted after
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-
-    return (
-        scan_records[0]["peerAddrType"],
-        scan_records[0]["peerAddr"]
-    )
-
-
-def perform_bonding(peripheral, central):
-    peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    peripheral.gap.startAdvertising()
-
-    peripheral_address_type, peripheral_address = get_peripheral_address(central, peripheral)
-
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
-
-    # wait for security manager
-    peripheral_bond = peripheral.securityManager.waitForEvent.setAsync()(
-        peripheral_connection["handle"],
-        15000
-    )
-
-    central_bond = central.securityManager.waitForEvent(
-        central_connection["handle"],
-        15000
-    ).result
-    peripheral_bond = peripheral_bond.result
-
-    central.gap.disconnect(central_connection["handle"], "REMOTE_USER_TERMINATED_CONNECTION")
-
-    # FIXME: needs event from the peripheral and central that they have been
-    # disconnected
-    sleep(1)
-
-
-@pytest.fixture(scope="function")
-def rand_data():
-    rand_data = get_rand_data("MANUFACTURER_SPECIFIC_DATA")
-    # make sure that the data have an acceptable size
-    if len(rand_data) > 16:
-        rand_data = rand_data[0:16]
-    return rand_data
-
-
-@pytest.fixture(scope="function")
-def peripheral(board_allocator: BoardAllocator, rand_data):
-    device = board_allocator.allocate('peripheral')
-    assert device is not None
-    init_device(device)
-
-    configure_peripheral(device, rand_data)
-    yield device
-
-    device.ble.shutdown()
-    board_allocator.release(device)
-
-
-@pytest.fixture(scope="function")
-def unknown_peripheral(board_allocator: BoardAllocator, rand_data):
-    device = board_allocator.allocate('peripheral')
-    assert device is not None
-    init_device(device)
-
-    configure_peripheral(device, rand_data)
-    yield device
-
-    device.ble.shutdown()
-    board_allocator.release(device)
-
-
-@pytest.fixture(scope="function")
-def central(board_allocator: BoardAllocator):
-    device = board_allocator.allocate('central')
-    assert device is not None
-    init_device(device)
-    device.gap.setCentralPrivacyConfiguration(
-        False,
-        "RESOLVE_AND_FORWARD"
-    )
-
-    yield device
-
-    device.ble.shutdown()
-    board_allocator.release(device)
-
-
-@pytest.fixture(scope="function")
-def unknown_central(board_allocator: BoardAllocator):
-    device = board_allocator.allocate('central')
-    assert device is not None
-    init_device(device)
-
-    yield device
-
-    device.ble.shutdown()
-    board_allocator.release(device)
-
-
-@pytest.fixture(scope="function")
-def peripheral_address(peripheral):
-    yield peripheral.gap.getAddress().result
-
-
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-@pytest.mark.parametrize("advertising_type", [
-     "ADV_CONNECTABLE_UNDIRECTED",
-     # "ADV_CONNECTABLE_DIRECTED",   # Directed advertising not supported yet
-     "ADV_SCANNABLE_UNDIRECTED",
-     "ADV_NON_CONNECTABLE_UNDIRECTED"
+@pytest.mark.ble41
+@pytest.mark.parametrize("advertising_type, unresolvable", [
+    ("CONNECTABLE_UNDIRECTED", True),
+    ("SCANNABLE_UNDIRECTED", True),
+    ("NON_CONNECTABLE_UNDIRECTED", True),
+    ("CONNECTABLE_UNDIRECTED", False),
+    ("SCANNABLE_UNDIRECTED", False),
+    ("NON_CONNECTABLE_UNDIRECTED", False),
 ])
-def test_privacy_random_resolvable_address(peripheral, central, advertising_type):
+def test_privacy_random_resolvable_and_nonresolvable_address(peripheral, central, advertising_type, unresolvable):
     """validate that when privacy is enabled and a peripheral use a random
     resolvable address then a random resolvable address is used for all
     advertising modes."""
-    peripheral.gap.setAdvertisingType(advertising_type)
-    peripheral.gap.startAdvertising()
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    init_privacy(peripheral)
+    init_privacy(central)
 
-    for scan in scan_records:
-        assert scan["addressType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert scan["peerAddrType"] == "RANDOM"
-        assert address_is_random_resolvable(scan["peerAddr"])
+    peripheral.gap.setPeripheralPrivacyConfiguration(unresolvable, "DO_NOT_RESOLVE")
 
-    peripheral.gap.stopAdvertising()
+    advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-@pytest.mark.parametrize("advertising_type, address_type", [
-    ("ADV_CONNECTABLE_UNDIRECTED", "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"),
-    # ("ADV_CONNECTABLE_DIRECTED", "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"),  # Directed advertising not supported yet
-    ("ADV_SCANNABLE_UNDIRECTED", "ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE"),
-    ("ADV_NON_CONNECTABLE_UNDIRECTED", "ADDR_TYPE_RANDOM_PRIVATE_NON_RESOLVABLE")
-])
-def test_privacy_random_non_resolvable_address(peripheral, central, advertising_type, address_type):
-    """validate that when privacy is enabled and a peripheral use a random non
-    resolvable address then a random non resolvable address is used during
-    non connectable advertising and a resolvable one is used during
-    connectable advertising."""
-    # enable non resolvable addresses
-    peripheral.gap.setPeripheralPrivacyConfiguration(
-        True,
-        "PERFORM_PAIRING_PROCEDURE"
-    )
+    scan_results = start_scanning_for_data(central, advertising_data)
 
-    peripheral.gap.setAdvertisingType(advertising_type)
-    peripheral.gap.startAdvertising()
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    assert len(scan_results) > 0
 
-    for scan in scan_records:
-        assert scan["addressType"] == address_type
-        assert scan["peerAddrType"] == "RANDOM"
-        assert address_matches_type(scan["peerAddr"], address_type)
+    at_least_one_resolved = False
 
-    peripheral.gap.stopAdvertising()
+    for scan in scan_results:
+        if scan["peer_address_type"] == "RANDOM":
+            if unresolvable and advertising_type != "CONNECTABLE_UNDIRECTED":
+                assert address_is_random_non_resolvable(scan["peer_address"])
+            else:
+                assert address_is_random_resolvable(scan["peer_address"])
+            at_least_one_resolved = True
 
+    assert at_least_one_resolved
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-def test_perform_pairing_procedure_policy(central, peripheral):
-    """validate that when a peripheral with privacy enabled with the policy
-    PERFORM_PAIRING_PROCEDURE is connected by an unknown privacy enabled
-    central then the pairing procedure is performed"""
-    peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    peripheral.gap.startAdvertising()
-
-    # get the private address of the device
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
-
-    peripheral_address_type = scan_records[0]["peerAddrType"]
-    peripheral_address = scan_records[0]["peerAddr"]
-
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
-
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == "RANDOM"
-
-    # wait for security manager
-    peripheral_bond = peripheral.securityManager.waitForEvent.setAsync()(
-        peripheral_connection["handle"],
-        15000
-    )
-
-    central_bond = central.securityManager.waitForEvent(
-        central_connection["handle"],
-        15000
-    ).result
-    peripheral_bond = peripheral_bond.result
-
-    for bond in [central_bond, peripheral_bond]:
-        assert bond["status"] == "pairingResult"
-        assert bond["param"] == "SEC_STATUS_SUCCESS"
-
-
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
-     "ADV_CONNECTABLE_UNDIRECTED",
-     # "ADV_CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
-     "ADV_SCANNABLE_UNDIRECTED",
-     "ADV_NON_CONNECTABLE_UNDIRECTED"
+     "CONNECTABLE_UNDIRECTED",
+     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+     "SCANNABLE_UNDIRECTED",
+     "NON_CONNECTABLE_UNDIRECTED"
 ])
 def test_address_resolution_when_advertised(peripheral, central, advertising_type):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that resolves addresses
     resolve the address advertised"""
-    perform_bonding(peripheral, central)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    peripheral.gap.setAdvertisingType(advertising_type)
-    peripheral.gap.startAdvertising()
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
-    for scan in scan_records:
-        assert scan["peerAddrType"] in ["PUBLIC_IDENTITY", "RANDOM_STATIC_IDENTITY"]
-        if scan["peerAddrType"] == "RANDOM_STATIC_IDENTITY":
-            assert address_is_random_non_resolvable(scan["peerAddr"]) is False
-            assert address_is_random_resolvable(scan["peerAddr"]) is False
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FORWARD")
 
-    peripheral.gap.stopAdvertising()
+    scan_results = start_scanning_for_data(central, advertising_data)
+
+    at_least_one_resolved = False
+
+    for scan in scan_results:
+        if scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY":
+            if address_is_random_resolvable(scan["peer_address"]) is False:
+                if address_is_random_non_resolvable(scan["peer_address"]) is False:
+                    at_least_one_resolved = True
+                    break
+
+    assert at_least_one_resolved
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
+@pytest.mark.ble41
 def test_connection_with_resolved_address(peripheral, central):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that resolves addresses
     can connect with the resolved address"""
-    perform_bonding(peripheral, central)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    # connect to the device
-    peripheral.gap.startAdvertising()
-    address_type, address = get_peripheral_address(central, peripheral)
+    advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
-    connection_params = get_connection_args(
-        address_type,
-        address
-    )
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FORWARD")
+    sleep(1)
+    scan_results = start_scanning_for_data(central, advertising_data)
 
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == address_type
-        if address_type == "RANDOM_STATIC_IDENTITY":
-            assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_STATIC"
-        else:
-            assert connection_result["peerAddrType"] == "ADDR_TYPE_PUBLIC"
+    for scan in scan_results:
+        if scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY" or scan["peer_address_type"] == "PUBLIC_IDENTITY":
+            central_connection, _ = connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
-    assert central_connection["peerAddr"] == address
+            assert central_connection["peer_address_type"] == scan["peer_address_type"]
+            assert central_connection["peer_address"] == scan["peer_address"]
+            break
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
-     "ADV_CONNECTABLE_UNDIRECTED",
-     # "ADV_CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
-     "ADV_SCANNABLE_UNDIRECTED",
-     "ADV_NON_CONNECTABLE_UNDIRECTED"
+     "CONNECTABLE_UNDIRECTED",
+     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+     "SCANNABLE_UNDIRECTED",
+     "NON_CONNECTABLE_UNDIRECTED"
 ])
 def test_central_not_resolve_policy(peripheral, central, advertising_type):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that do not resolves
     addresses do not resolve the address advertised"""
-    perform_bonding(peripheral, central)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    central.gap.setCentralPrivacyConfiguration(
-        False,
-        "DO_NOT_RESOLVE"
-    )
+    advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
-    peripheral.gap.setAdvertisingType(advertising_type)
-    peripheral.gap.startAdvertising()
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
-    for scan in scan_records:
-        assert "RANDOM" == scan["peerAddrType"]
-        assert address_is_random_resolvable(scan["peerAddr"])
+    scan_results = start_scanning_for_data(central, advertising_data)
 
-    peripheral.gap.stopAdvertising()
+    for scan in scan_results:
+        assert scan["peer_address_type"] == "RANDOM"
+        assert address_is_random_resolvable(scan["peer_address"])
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
+@pytest.mark.ble41
 def test_connection_to_non_resolved_address(peripheral, central):
     """validate that when a peripheral with privacy enabled using private
     resolvable address advertise then a known peer that do not resolves
     addresses can connect to the non resolved address"""
-    perform_bonding(peripheral, central)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    central.gap.setCentralPrivacyConfiguration(
-        False,
-        "DO_NOT_RESOLVE"
-    )
+    advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
-    peripheral.gap.setPeripheralPrivacyConfiguration(
-        False,
-        "DO_NOT_RESOLVE"
-    )
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
-    # connect to the device
-    peripheral.gap.startAdvertising()
-    address_type, address = get_peripheral_address(central, peripheral)
-    assert "RANDOM" == address_type
+    scan_results = start_scanning_for_data(central, advertising_data)
+    scan = scan_results[0]
 
-    connection_params = get_connection_args(
-        address_type,
-        address
-    )
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
+    assert scan["peer_address_type"] == "RANDOM"
+    assert address_is_random_resolvable(scan["peer_address"])
 
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == address_type
-        assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-
-    assert central_connection["peerAddr"] == address
+    connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-def test_resolve_private_address(peripheral, central):
-    """Ensure that if the central privacy policy is set to resolve and filter
-    and the device has no bond then resolved private addresses are not filtered"""
-    advertising_types = [
-        "ADV_CONNECTABLE_UNDIRECTED",
-        # "ADV_CONNECTABLE_DIRECTED",
-        "ADV_SCANNABLE_UNDIRECTED",
-        "ADV_NON_CONNECTABLE_UNDIRECTED"
-    ]
-
-    central.gap.setCentralPrivacyConfiguration(
-        False,
-        "RESOLVE_AND_FILTER"
-    )
-
-    # test that scan works as intended
-    for advertising_type in advertising_types:
-        peripheral.gap.setAdvertisingType(advertising_type)
-        peripheral.gap.startAdvertising()
-        scan_records = central.gap.startScan(
-            SCAN_TIMEOUT,
-            get_advertising_data(peripheral)
-        ).result
-        assert len(scan_records) > 0
-
-        for scan in scan_records:
-            assert scan["addressType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-            assert scan["peerAddrType"] == "RANDOM"
-            assert address_is_random_resolvable(scan["peerAddr"])
-
-        peripheral.gap.stopAdvertising()
-
-    # test that connection works as intended
-    peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    peripheral.gap.startAdvertising()
-
-    # get the private address of the device
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
-
-    peripheral_address_type = scan_records[0]["peerAddrType"]
-    peripheral_address = scan_records[0]["peerAddr"]
-
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
-
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == "RANDOM"
-
-
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
+@pytest.mark.ble41
 @pytest.mark.parametrize("advertising_type", [
-     "ADV_CONNECTABLE_UNDIRECTED",
-     # "ADV_CONNECTABLE_DIRECTED",
-     "ADV_SCANNABLE_UNDIRECTED",
-     "ADV_NON_CONNECTABLE_UNDIRECTED"
+     "CONNECTABLE_UNDIRECTED",
+     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+     "SCANNABLE_UNDIRECTED",
+     "NON_CONNECTABLE_UNDIRECTED"
 ])
-def test_resolve_and_filter_policy_with_unknown_peripheral(central, peripheral, unknown_peripheral, advertising_type):
+def test_resolve_and_filter_unknown_address(peripheral, central, advertising_type):
     """Ensure that if the central privacy policy is set to resolve and filter
-    and the device has one bond then non resolved private addresses are filtered"""
-    perform_bonding(peripheral, central)
+    and the device has no bond then resolvable private addresses are not filtered"""
+    init_privacy(peripheral)
+    init_privacy(central)
 
-    central.gap.setCentralPrivacyConfiguration(
-        False,
-        "RESOLVE_AND_FILTER"
-    )
+    advertising_data = start_advertising_of_type(peripheral, advertising_type)
 
-    # test that scan works as intended
-    unknown_peripheral.gap.setAdvertisingType(advertising_type)
-    unknown_peripheral.gap.startAdvertising()
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(unknown_peripheral)
-    ).result
-    assert len(scan_records) == 0
-    unknown_peripheral.gap.stopAdvertising()
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FILTER")
+
+    scan_results = start_scanning_for_data(central, advertising_data)
+
+    assert len(scan_results)
+
+    for scan in scan_results:
+        assert scan["peer_address_type"] == "RANDOM"
+        assert address_is_random_resolvable(scan["peer_address"])
+
+@pytest.mark.ble41
+@pytest.mark.parametrize("advertising_type", [
+    "CONNECTABLE_UNDIRECTED",
+    # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+    "SCANNABLE_UNDIRECTED",
+    "NON_CONNECTABLE_UNDIRECTED"
+])
+def test_resolve_and_filter_bonded_peer(peripheral, central, advertising_type):
+    """Ensure that if the central privacy policy is set to resolve and filter
+    bonded devices show up in scan results as resolved addresses"""
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
+
+    advertising_data = start_advertising_of_type(peripheral, advertising_type)
+
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FILTER")
+
+    scan_results = start_scanning_for_data(central, advertising_data)
+
+    assert len(scan_results)
+
+    for scan in scan_results:
+        assert scan["peer_address_type"] == "RANDOM_STATIC_IDENTITY"
+        assert address_is_random_resolvable(scan["peer_address"]) is False
+        assert address_is_random_non_resolvable(scan["peer_address"]) is False
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-def test_non_resolved_address_with_resolve_and_forward(peripheral, central, unknown_peripheral):
+@pytest.mark.ble41
+@pytest.mark.parametrize("advertising_type", [
+     "CONNECTABLE_UNDIRECTED",
+     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+     "SCANNABLE_UNDIRECTED",
+     "NON_CONNECTABLE_UNDIRECTED"
+])
+def test_resolve_and_filter_unknown_address_with_bond_present(peripheral, central, peripheral2, advertising_type):
+    """Ensure that if the central privacy policy is set to resolve and filter
+    and the device has a bond then resolved private addresses are filtered"""
+    init_privacy(peripheral2)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
+
+    advertising_data = start_advertising_of_type(peripheral2, advertising_type)
+
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FILTER")
+
+    scan_results = start_scanning_for_data(central, advertising_data)
+
+    assert len(scan_results) == 0
+
+
+@pytest.mark.ble41
+@pytest.mark.parametrize("advertising_type", [
+     "CONNECTABLE_UNDIRECTED",
+     # "CONNECTABLE_DIRECTED",  # Directed advertising not supported yet
+     "SCANNABLE_UNDIRECTED",
+     "NON_CONNECTABLE_UNDIRECTED"
+])
+def test_non_resolved_address_with_resolve_and_forward(peripheral, central, peripheral2, advertising_type):
     """Ensure that if the central privacy policy is set to resolve and forward
     and the device has one bond then non resolved private addresses are forwarded"""
-    perform_bonding(peripheral, central)
+    init_privacy(peripheral2)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    advertising_types = [
-        "ADV_CONNECTABLE_UNDIRECTED",
-        # "ADV_CONNECTABLE_DIRECTED",
-        "ADV_SCANNABLE_UNDIRECTED",
-        "ADV_NON_CONNECTABLE_UNDIRECTED"
-    ]
+    advertising_data = start_advertising_of_type(peripheral2, advertising_type)
 
-    central.gap.setCentralPrivacyConfiguration(
-        False,
-        "RESOLVE_AND_FORWARD"
-    )
+    central.gap.setCentralPrivacyConfiguration(False, "RESOLVE_AND_FORWARD")
 
-    # test that scan works as intended
-    for advertising_type in advertising_types:
-        unknown_peripheral.gap.setAdvertisingType(advertising_type)
-        unknown_peripheral.gap.startAdvertising()
-        scan_records = central.gap.startScan(
-            SCAN_TIMEOUT,
-            get_advertising_data(unknown_peripheral)
-        ).result
-        assert len(scan_records) > 0
+    scan_results = start_scanning_for_data(central, advertising_data)
 
-        for scan in scan_records:
-            assert scan["addressType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-            assert scan["peerAddrType"] == "RANDOM"
-            assert address_is_random_resolvable(scan["peerAddr"])
+    assert len(scan_results)
 
-        unknown_peripheral.gap.stopAdvertising()
-
-    # test that connection works as intended
-    unknown_peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    unknown_peripheral.gap.startAdvertising()
-
-    # get the private address of the device
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(unknown_peripheral)
-    ).result
-    assert len(scan_records) > 0
-
-    peripheral_address_type = scan_records[0]["peerAddrType"]
-    peripheral_address = scan_records[0]["peerAddr"]
-
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
-    peripheral_connection = unknown_peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
-
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == "RANDOM"
+    for scan in scan_results:
+        assert scan["peer_address_type"] == "RANDOM"
+        assert address_is_random_resolvable(scan["peer_address"])
 
 
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-def test_reject_non_resolved_address_with_no_bond(peripheral, central):
+@pytest.mark.ble41
+def test_reject_non_resolved_address_with_no_bond_accepts_connection(peripheral, central):
     """validate that when a peripheral with privacy enabled, the privacy policy
     set to REJECT_NON_RESOLVED_ADDRESS and no bond is connected by an unknown
     privacy enabled then connection is accepted"""
-    peripheral.gap.setPeripheralPrivacyConfiguration(
-        False,
-        "REJECT_NON_RESOLVED_ADDRESS"
-    )
+    init_privacy(peripheral)
+    init_privacy(central)
 
-    peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    peripheral.gap.startAdvertising()
+    peripheral.gap.setPeripheralPrivacyConfiguration(False, "REJECT_NON_RESOLVED_ADDRESS")
 
-    # get the private address of the device
-    scan_records = central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
-    peripheral_address_type = scan_records[0]["peerAddrType"]
-    peripheral_address = scan_records[0]["peerAddr"]
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
+    scan_results = start_scanning_for_data(central, advertising_data)
+    scan = scan_results[0]
 
-    peripheral_connection = peripheral.gap.waitForConnection.setAsync()(1000)
-    central_connection = central.gap.connect(*connection_params).result
-    peripheral_connection = peripheral_connection.result
+    connect_to_address(central, peripheral, scan["peer_address_type"], scan["peer_address"])
 
-    for connection_result in [central_connection, peripheral_connection]:
-        assert connection_result["ownAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddrType"] == "ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE"
-        assert connection_result["peerAddressType"] == "RANDOM"
-
-    # wait few seconds to ensure the connection is stable
-    sleep(4)
-
-    expected_state = {
-        'advertising': False,
-        'connected': True
-    }
-
-    assert expected_state == peripheral.gap.getState().result
-    assert expected_state == central.gap.getState().result
-
-
-@pytest.mark.ble42
-@pytest.mark.skip(reason="Missing BLE API")
-def test_reject_non_resolved_address_with_one_bond(peripheral, central, unknown_central):
+@pytest.mark.ble41
+def test_reject_non_resolved_address_with_one_bond(peripheral, central, central2):
     """validate that when a peripheral with:
           * privacy enabled
           * privacy policy set to REJECT_NON_RESOLVED_ADDRESS
           * at least a bond
         is connected by an unknown privacy enabled device then the connection
         is rejected"""
-    perform_bonding(peripheral, central)
+    init_privacy(central2)
+    perform_bonding_with_privacy_and_disconnect(peripheral, central)
 
-    peripheral.gap.setPeripheralPrivacyConfiguration(
-        False,
-        "REJECT_NON_RESOLVED_ADDRESS"
-    )
+    peripheral.gap.setPeripheralPrivacyConfiguration(False, "REJECT_NON_RESOLVED_ADDRESS")
 
-    peripheral.gap.setAdvertisingType("ADV_CONNECTABLE_UNDIRECTED")
-    peripheral.gap.startAdvertising()
+    advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
 
-    # get the private address of the device
-    scan_records = unknown_central.gap.startScan(
-        SCAN_TIMEOUT,
-        get_advertising_data(peripheral)
-    ).result
-    assert len(scan_records) > 0
+    central2.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+    central2.gap.setPeripheralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
 
-    peripheral_address_type = scan_records[0]["peerAddrType"]
-    peripheral_address = scan_records[0]["peerAddr"]
+    scan_results = start_scanning_for_data(central2, advertising_data)
+    scan = scan_results[0]
 
-    # connect to the device
-    connection_params = get_connection_args(
-        peripheral_address_type,
-        peripheral_address
-    )
+    disconnection_cmd = peripheral.gap.waitForDisconnection.setAsync()(10000)
 
-    peripheral_connection = peripheral.gap.waitForConnection.withRetcode(-1).setAsync()(1000)
-    central_connection = unknown_central.gap.connect(*connection_params).result
-    assert peripheral_connection.error == "timeout"
+    central2.gap.startConnecting(scan["peer_address_type"], scan["peer_address"]).result
 
-    # wait few seconds to ensure devices are disconnected
-    sleep(4)
+    assert disconnection_cmd.result
 
-    expected_peripheral_state = {
-        'advertising': True,
-        'connected': False
-    }
 
-    expected_central_state = {
-        'advertising': False,
-        'connected': False
-    }
+@pytest.mark.ble41
+def test_perform_pairing_procedure_policy(central, peripheral):
+    """validate that when a peripheral with privacy enabled with the policy
+    PERFORM_PAIRING_PROCEDURE is connected by an unknown privacy enabled
+    central then the pairing procedure is performed"""
+    central_ss, peripheral_ss = init_security_sessions(central, peripheral)
 
-    assert expected_peripheral_state == peripheral.gap.getState().result
-    assert expected_central_state == central.gap.getState().result
+    peripheral.gap.enablePrivacy(True)
+    central.gap.enablePrivacy(True)
+
+    peripheral.gap.setPeripheralPrivacyConfiguration(False, "PERFORM_PAIRING_PROCEDURE")
+    central.gap.setCentralPrivacyConfiguration(False, "DO_NOT_RESOLVE")
+
+    central_ss.connect(peripheral_ss)
+
+    # We should get a request automatically because of the policy
+    peripheral_ss.wait_for_event()
+    peripheral_ss.expect_pairing_request()
+
+    # Accept request, pairing should complete successfully
+    peripheral_ss.accept_pairing_request()
+    peripheral_ss.expect_pairing_success()

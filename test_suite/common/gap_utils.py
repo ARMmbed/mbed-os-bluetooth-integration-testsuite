@@ -162,7 +162,8 @@ def get_rand_data(adv_data_type):
         return hex(int(random.getrandbits(16)))
     elif adv_data_type == "MANUFACTURER_SPECIFIC_DATA":
         char_set = string.ascii_letters + string.octdigits
-        str_len = random.randint(1, 29)
+        # size is at least 2 to contain company identifier
+        str_len = random.randint(2, 29)
         rand_str = ''.join(random.choice(char_set) for i in range(str_len))
         return rand_str.encode().hex().lower()
 
@@ -200,37 +201,64 @@ class RandomAdvDataPair:
         self.size = self.dataSize + 2
 
 
-def gap_connect(central, peripheral):
-    peripheral.advDataBuilder.clear()
-    # add flags data into advertising payload
-    advertising_flags = ["LE_GENERAL_DISCOVERABLE", "BREDR_NOT_SUPPORTED"]
-    for f in advertising_flags:
-        peripheral.advDataBuilder.setFlags(f)
-    peripheral.gap.applyAdvPayloadFromBuilder(LEGACY_ADVERTISING_HANDLE)
-
-    # set the advertising type
-    peripheral.advParams.setType("CONNECTABLE_UNDIRECTED")
+def start_advertising_of_type(peripheral, advertising_type):
+    # params
+    peripheral.advParams.setType(advertising_type)
+    if advertising_type == "CONNECTABLE_UNDIRECTED":
+        peripheral.advParams.setPrimaryInterval(100, 100)
+    else:
+        peripheral.advParams.setPrimaryInterval(200, 400)
     peripheral.gap.setAdvertisingParameters(LEGACY_ADVERTISING_HANDLE)
 
-    # get the peripheral mac address
-    server_address = peripheral.gap.getAddress().result
+    # payload
+    peripheral.advDataBuilder.clear()
+    if advertising_type == "CONNECTABLE_UNDIRECTED":
+        peripheral.advDataBuilder.setFlags("LE_GENERAL_DISCOVERABLE")
+    peripheral.advDataBuilder.setFlags("BREDR_NOT_SUPPORTED")
+    rand_data = get_rand_data("MANUFACTURER_SPECIFIC_DATA")
+    if len(rand_data) > 10:
+        rand_data = rand_data[0:10]
+    peripheral.advDataBuilder.setManufacturerSpecificData(rand_data)
+    peripheral.gap.applyAdvPayloadFromBuilder(LEGACY_ADVERTISING_HANDLE)
 
-    # start advertising
+    # get resulting payload
+    advertising_data = peripheral.advDataBuilder.getAdvertisingData().result
+
     peripheral.gap.startAdvertising(LEGACY_ADVERTISING_HANDLE, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
 
-    # connect the central to the peripheral
-    # wait asynchronously on the peripheral side
-    server_connection_cmd = peripheral.gap.waitForConnection.setAsync()(10000)
-    client_connection = central.gap.connect(
-        server_address["address_type"], server_address["address"]
-    ).result
+    return advertising_data
 
+
+def start_scanning_for_data(central, advertising_data):
+    central.scanParams.set1mPhyConfiguration(100, 100, False)
+    central.scanParams.setFilter("NO_FILTER")
+    central.gap.setScanParameters()
+    scan_cmd = central.gap.scanForData(advertising_data, 1000)
+    return scan_cmd.result
+
+
+def connect_to_address(central, peripheral, peer_address_type, peer_address):
+    peripheral_connection_cmd = peripheral.gap.waitForConnection.setAsync()(10000)
     sleep(0.1)
+    central_connection = central.gap.connect(peer_address_type, peer_address).result
+    peripheral_connection = peripheral_connection_cmd.result
+    return central_connection, peripheral_connection
 
-    server_connection = server_connection_cmd.result
+
+def gap_connect(central, peripheral):
+    advertising_data = start_advertising_of_type(peripheral, "CONNECTABLE_UNDIRECTED")
+
+    scan = start_scanning_for_data(central, advertising_data)
+    assert len(scan) > 0
+    central_connection, peripheral_connection = connect_to_address(
+        central,
+        peripheral,
+        scan[0]["peer_address_type"],
+        scan[0]["peer_address"]
+    )
 
     # get the handle of the new connection
-    return client_connection["connection_handle"], server_connection["connection_handle"]
+    return central_connection["connection_handle"], peripheral_connection["connection_handle"]
 
 
 def discover_user_services(central, connection_handle):
