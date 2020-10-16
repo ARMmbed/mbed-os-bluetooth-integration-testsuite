@@ -113,6 +113,18 @@ struct EventHandler : public ble::Gap::EventHandler {
         endObject;
     }
 
+    void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
+    {
+        JSONEventStream output;
+        output << startObject <<
+            key("type") << "event" <<
+            key("name") << "advertising_start" <<
+            key("value") << startObject <<
+                key("advertising_handle") << event.getAdvHandle() <<
+            endObject <<
+        endObject;
+    }
+
     virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
     {
         JSONEventStream output;
@@ -121,13 +133,17 @@ struct EventHandler : public ble::Gap::EventHandler {
             key("name") << "advertising_end" <<
             key("value") << startObject <<
                 key("advertising_handle") << event.getAdvHandle() <<
+                key("legacy") << event.isLegacy();
+        if (!event.isLegacy()) {
+                output <<
                 key("completed_events") << event.getCompleted_events() <<
                 key("is_connected") << event.isConnected();
-        if (event.isConnected()) {
-            output <<
+            if (event.isConnected()) {
+                output <<
                 key("connection_handle") << event.getConnection();
+            }
         }
-        output <<
+            output <<
             endObject <<
         endObject;
     }
@@ -835,9 +851,58 @@ DECLARE_CMD(StartAdvertising) {
         CMD_ARG("uint8_t", "maxEvent", "")
     )
     CMD_HANDLER(ble::advertising_handle_t handle, ble::adv_duration_t duration, uint8_t maxEvents, CommandResponsePtr& response) {
-        ble_error_t err = gap().startAdvertising(handle, duration, maxEvents);
-        reportErrorOrSuccess(response, err);
+        startProcedure<StartAdvertisingProcedure>(handle, duration, maxEvents, response);
     }
+
+    struct StartAdvertisingProcedure: public AsyncProcedure, Gap::EventHandler {
+        StartAdvertisingProcedure(
+            ble::advertising_handle_t handle,
+            ble::adv_duration_t duration,
+            uint8_t maxEvents,
+            CommandResponsePtr& response
+        ) : AsyncProcedure(response, 1000),
+            _handle(handle), _duration(duration), _maxEvents(maxEvents)
+        {
+            gap().setEventHandler(this);
+        }
+
+        // AsyncProcedure implementation
+
+        ~StartAdvertisingProcedure() override {
+            // revert to default event handler
+            enable_event_handling();
+        }
+
+        bool doStart() override {
+            ble_error_t err = gap().startAdvertising(_handle, _duration, _maxEvents);
+            if (err != BLE_ERROR_NONE) {
+                response->faillure(err);
+                return false;
+            }
+            return true;
+        }
+
+        // Gap::EventHandler implementation
+
+        void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
+        {
+            if (event.getAdvHandle() != _handle) {
+                return;
+            }
+
+            response->success();
+            response->getResultStream() << startObject <<
+                key("handle") << event.getAdvHandle() <<
+            endObject;
+
+            terminate();
+        }
+
+    private:
+        ble::advertising_handle_t _handle;
+        ble::adv_duration_t _duration;
+        uint8_t _maxEvents;
+    };
 };
 
 DECLARE_CMD(StopAdvertising) {
@@ -846,9 +911,53 @@ DECLARE_CMD(StopAdvertising) {
         CMD_ARG("ble::advertising_handle_t", "handle", "")
     )
     CMD_HANDLER(ble::advertising_handle_t handle, CommandResponsePtr& response) {
-        ble_error_t err = gap().stopAdvertising(handle);
-        reportErrorOrSuccess(response, err);
+        startProcedure<StopAdvertisingProcedure>(handle, response);
     }
+
+    struct StopAdvertisingProcedure: public AsyncProcedure, Gap::EventHandler {
+        StopAdvertisingProcedure(
+            ble::advertising_handle_t handle,
+            CommandResponsePtr& response
+        ) : AsyncProcedure(response, 1000), _handle(handle)
+        {
+            gap().setEventHandler(this);
+        }
+
+        // AsyncProcedure implementation
+
+        ~StopAdvertisingProcedure() override {
+            // revert to default event handler
+            enable_event_handling();
+        }
+
+        bool doStart() override {
+            ble_error_t err = gap().stopAdvertising(_handle);
+            if (err != BLE_ERROR_NONE) {
+                response->faillure(err);
+                return false;
+            }
+            return true;
+        }
+
+        // Gap::EventHandler implementation
+
+        void onAdvertisingEnd(const ble::AdvertisingEndEvent &event) override
+        {
+            if (event.getAdvHandle() != _handle) {
+                return;
+            }
+
+            response->success();
+            response->getResultStream() << startObject <<
+                key("handle") << event.getAdvHandle() <<
+                endObject;
+
+            terminate();
+        }
+
+    private:
+        ble::advertising_handle_t _handle;
+    };
 };
 
 DECLARE_CMD(IsAdvertisingActive) {
