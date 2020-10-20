@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import logging
+from time import sleep
 
 from serial import Serial, SerialException
 
@@ -21,8 +22,9 @@ log = logging.getLogger(__name__)
 
 
 class SerialConnection:
-    def __init__(self, port=None, baudrate=9600, timeout=1):
+    def __init__(self, port=None, baudrate=9600, timeout=1, inter_byte_delay=None):
         self.ser = Serial(port, baudrate, timeout=timeout)
+        self.inter_byte_delay = inter_byte_delay
 
     def open(self):
         """
@@ -49,7 +51,12 @@ class SerialConnection:
         :param data: Data to send
         """
         try:
-            self.ser.write(data)
+            if self.inter_byte_delay:
+                for byte in data:
+                    self.ser.write(bytes([byte]))
+                    sleep(self.inter_byte_delay)
+            else:
+                self.ser.write(data)
         except SerialException as se:
             log.error('Serial connection write error: {}'.format(se))
 

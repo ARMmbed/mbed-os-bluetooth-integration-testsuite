@@ -15,6 +15,7 @@
 
 import json
 import queue
+from time import sleep
 from typing import List, Optional
 
 from .device import Device
@@ -332,9 +333,10 @@ class BleDevice(Device):
         ]
     }
 
-    def __init__(self, device: Device):
+    def __init__(self, device: Device, command_delay=0):
         """Create a new BLEDevice instance."""
         self.device = device
+        self.command_delay = command_delay
         self.events = queue.Queue()
 
     def command(self, cmd: str, expected_retcode: int = 0, async_command: bool = False) -> CommandResult:
@@ -348,6 +350,7 @@ class BleDevice(Device):
         response = None
 
         if async_command:
+            sleep(self.command_delay)
             self.device.send(cmd)
 
             class AsynchronousResponse:
@@ -390,6 +393,7 @@ class BleDevice(Device):
 
     # Add the proxy methods
     def send(self, command, expected_output=None, wait_before_read=None, wait_for_response=30, assert_output=True):
+        sleep(self.command_delay)
         lines = self.device.send(command, expected_output, wait_before_read, wait_for_response, assert_output)
         return self._filter_events(lines)
 
