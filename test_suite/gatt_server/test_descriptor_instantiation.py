@@ -118,12 +118,6 @@ def test_characteristic_has_cccd(central, peripheral, char_property, descriptor)
                 discovered_characteristic["end_handle"]
             )
 
-            # find the CCCD
-            cccd = [x for x in discovered_descriptors if x["UUID"] == 0x2902]
-            assert 1 == len(cccd)
-            discovered_descriptors.remove(cccd[0])
-
-            # notify/indicate descriptor is implicit
             assert len(declared_characteristic["descriptors"]) == len(discovered_descriptors)
             for k in range(len(declared_characteristic["descriptors"])):
                 declared_descriptor = declared_characteristic["descriptors"][k]
