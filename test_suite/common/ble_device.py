@@ -287,7 +287,7 @@ class BleDevice(Device):
             "startConnecting", "cancelConnect", "waitForDisconnection",
             "updateConnectionParameters", "manageConnectionParametersUpdateRequest",
             "acceptConnectionParametersUpdate", "rejectConnectionParametersUpdate",
-            "disconnect", "isFeatureSupported"
+            "disconnect", "isFeatureSupported", "isRadioActive"
         ],
         "gattClient": [
             "discoverAllServicesAndCharacteristics", "discoverAllServices",

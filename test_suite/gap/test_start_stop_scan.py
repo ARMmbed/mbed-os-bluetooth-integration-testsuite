@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from time import sleep
 
 import pytest
 
@@ -103,3 +104,31 @@ def test_scan_should_not_report_advertisement_when_peer_inactive(scanner: BleDev
     scanner.gap.setScanParameters()
     scans = scanner.gap.scanForAddress(advertiser_address, scan_timeout).result
     assert len(scans) == 0
+
+
+@pytest.mark.ble41
+def test_scan_start_stop_can_be_called_in_succession(scanner: BleDevice):
+    """startScan should not report scan results when there is no device advertising"""
+    # start scan
+
+    scanner.gap.startScan(0, 'DISABLE', 0)
+    assert scanner.gap.isRadioActive().result is True
+
+    scanner.gap.stopScan()
+    # this is async so we wait
+    sleep(0.5)
+    assert scanner.gap.isRadioActive().result is False
+
+    for i in range(10):
+        scanner.gap.stopScan()
+        scanner.gap.startScan(0, 'DISABLE', 0)
+
+    assert scanner.gap.isRadioActive().result is True
+
+    for i in range(10):
+        scanner.gap.startScan(0, 'DISABLE', 0)
+        scanner.gap.stopScan()
+
+    # this is async so we wait
+    sleep(0.5)
+    assert scanner.gap.isRadioActive().result is False
