@@ -32,6 +32,12 @@
 #include "parameters/ScanParameters.h"
 #include "parameters/ConnectionParameters.h"
 #include "Serialization/Hex.h"
+#include "util/HijackMember.h"
+#include "GapImpl.h"
+
+typedef bool (ble::impl::Gap::*gap_impl_is_radio_active_method)() const;
+HIJACK_MEMBER(_gap_impl_accessor, ble::impl::Gap* Gap::*, &Gap::impl);
+HIJACK_MEMBER(_gap_impl_is_radio_active_accessor, gap_impl_is_radio_active_method, &ble::impl::Gap::is_radio_active);
 
 using mbed::util::SharedPointer;
 
@@ -1773,6 +1779,15 @@ DECLARE_CMD(IsFeatureSupported) {
     }
 };
 
+DECLARE_CMD(IsRadioActive) {
+    CMD_NAME("isRadioActive")
+    CMD_HANDLER(CommandResponsePtr& response) {
+        ble::impl::Gap*& gap_impl = gap().*_gap_impl_accessor;
+        bool active = (gap_impl->*_gap_impl_is_radio_active_accessor)();
+        response->success(active);
+    }
+};
+
 static const Command* const _cmd_handlers[] = {
     CMD_INSTANCE(GetAddressCommand),
     CMD_INSTANCE(GetMaxWhitelistSizeCommand),
@@ -1827,7 +1842,8 @@ static const Command* const _cmd_handlers[] = {
     CMD_INSTANCE(AcceptConnectionParametersUpdate),
     CMD_INSTANCE(RejectConnectionParametersUpdate),
     CMD_INSTANCE(Disconnect),
-    CMD_INSTANCE(IsFeatureSupported)
+    CMD_INSTANCE(IsFeatureSupported),
+    CMD_INSTANCE(IsRadioActive)
 };
 
 } // end of annonymous namespace

@@ -568,6 +568,16 @@ connection. Will not drop a connection if it already has been established.
 * modeled after: `Gap::disconnect`
 
 
+### isRadioActive
+
+* invocation: `gap isRadioActive`
+* description: This is not part of Gap API and relies on implementation detail but is useful for tests.
+* arguments: None 
+* result: 
+  - [`bool`](#bool) **result**: True if controller needs radio (there's scanning, advertising, connecting), false if it's idle. 
+* modeled after: `impl::Gap::isRadioActive`
+
+
 ## gattClient module
 
 The `gattClient` module expose the following functions from the class 
