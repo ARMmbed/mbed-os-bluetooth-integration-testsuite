@@ -5,15 +5,14 @@ This repository contains a wide range of tests for validating ports of the
 
 <!-- TOC -->
 
-<!--needs updating-->
-
+- [BLE tests](#ble-tests)
 - [Principle of operation](#principle-of-operation)
 - [Requirements](#requirements)
 - [Running the tests](#running-the-tests)
   - [List existing tests](#list-existing-tests)
   - [Run all tests](#run-all-tests)
   - [Run specific tests](#run-specific-tests)
-  - [Run test by markers](#run-test-by-markers)
+  - [Run tests by markers](#run-tests-by-markers)
   - [Select targets](#select-targets)
 - [Extending the test suite](#extending-the-test-suite)
   - [Test conventions](#test-conventions)
