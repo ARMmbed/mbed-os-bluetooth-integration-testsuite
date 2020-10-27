@@ -159,7 +159,7 @@ not covered by this document.
 
 To be discovered by pytest:
 
-- Test files must start with the name `test`.<!--name here, prefix in the next line - are they really different things?-->
+- Test files must start with the prefix `test`.<!--name here, prefix in the next line - are they really different things?-->
 - Test functions name must start with the prefix `test`.
 
 ## Assertions
