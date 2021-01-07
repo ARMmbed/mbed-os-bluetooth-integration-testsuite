@@ -95,8 +95,9 @@ class SerialDevice(Device):
                     log.warning('{}: Invalid bytes read: {}'.format(self.name, line))
                     continue
                 plain_line.rstrip()
-                log.info('<--|{}| {}'.format(self.name, plain_line.strip()))
-                self.iq.put(plain_line)
+                if plain_line.strip():
+                    log.info('<--|{}| {}'.format(self.name, plain_line.strip()))
+                    self.iq.put(plain_line)
             else:
                 pass
 
