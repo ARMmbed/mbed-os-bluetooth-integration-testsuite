@@ -111,6 +111,7 @@ def test_scan_start_stop_can_be_called_in_succession(scanner: BleDevice):
     """startScan should not report scan results when there is no device advertising"""
     # start scan
 
+    scanner.gap.setScanParameters()
     scanner.gap.startScan(0, 'DISABLE', 0)
     assert scanner.gap.isRadioActive().result is True
 
