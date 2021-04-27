@@ -73,7 +73,7 @@ To run the tests, you need:
 * Boards supporting BLE. The most demanding test in these
 test suite requires three boards to be connected to the machine running the test.
 
-* [ble-cliapp](https://github.com/ARMmbed/ble-cliapp): The RPC server running on
+* [ble-cliapp](../ble-cliapp): The RPC server running on
 the board.
 
     > **Note:** This documentation is **not** a reference of `ble-cliapp`. Consult the documentation of that project for more information.  
