@@ -15,7 +15,7 @@
 #include "Serialization/GapSerializer.h"
 #include "Serialization/GapAdvertisingDataSerializer.h"
 #include "Serialization/Hex.h"
-#include "Common.h"
+#include "../Common.h"
 #include "CLICommand/CommandSuite.h"
 #include "CLICommand/CommandHelper.h"
 
