@@ -21,6 +21,7 @@ jobs:
         run: |
           git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
           lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
+          lavacli workers list
           cd mbed-os-lava-scripts/jobs
           LAVA_JOB_NO=`./launch_job.sh ble_test.yaml`
           echo "Running lava job $LAVA_JOB_NO"
