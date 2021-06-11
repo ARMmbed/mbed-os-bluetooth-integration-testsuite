@@ -1,0 +1,35 @@
+name: Run ble integration tests
+on:
+  schedule:
+    - cron:  '30 * * * *'
+jobs:
+  run-integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    container: mbedos/mbed-os-env:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y lavacli curl
+
+      - name: Run lava job for ble integration tests
+        env:
+          LAVA_SERVER_TOKEN: ${{ secrets.LAVA_SERVER_TOKEN }}
+          LAVA_SERVER_URL: ${{ secrets.LAVA_SERVER_URL }}
+        run: |
+          git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
+          lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
+          cd mbed-os-lava-scripts/jobs
+          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml`
+          echo "Running lava job $LAVA_JOB_NO"
+          cd ../..
+          lavacli jobs wait $LAVA_JOB_NO
+          echo "lava job $LAVA_JOB_NO completed"
+          lavacli jobs logs $LAVA_JOB_NO > ble-integration-test.log
+
+      - name: Upload integration test logs
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: integration-test-log
+          path: ble-integration-test.log
