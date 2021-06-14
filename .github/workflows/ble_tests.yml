@@ -23,7 +23,7 @@ jobs:
           lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
           lavacli workers list
           cd mbed-os-lava-scripts/jobs
-          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml`
+          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml ARMmbed/mbed-os-bluetooth-integration-testsuite`
           echo "Running lava job $LAVA_JOB_NO"
           cd ../..
           lavacli jobs wait $LAVA_JOB_NO
