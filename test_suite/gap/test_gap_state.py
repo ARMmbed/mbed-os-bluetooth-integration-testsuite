@@ -332,7 +332,7 @@ def test_advertising_after_disconnection(peripheral, peripheral_address, central
     assert len(scan_records) > 0
 
 
-@pytest.mark.ble41
+@pytest.mark.ble50
 def test_extended_advertising(peripheral, peripheral_address, central, central_address, test_params):
     """test extended advertising start and stop"""
 
@@ -352,7 +352,7 @@ def test_extended_advertising(peripheral, peripheral_address, central, central_a
         assert verify_advertising(peripheral_address, central, test_params) is False
 
 
-@pytest.mark.ble41
+@pytest.mark.ble50
 def test_extended_advertising_timeout(peripheral, peripheral_address, central, central_address, test_params):
     """test extended advertising timeout causes the adv set to stop"""
 
@@ -376,7 +376,7 @@ def test_extended_advertising_timeout(peripheral, peripheral_address, central, c
         assert verify_advertising(peripheral_address, central, test_params) is True
 
 
-@pytest.mark.ble41
+@pytest.mark.ble50
 def test_extended_advertising_multiple_times(peripheral, peripheral_address, central, central_address, test_params):
     """test extended advertising start and stop mutliple times in sequence"""
 
