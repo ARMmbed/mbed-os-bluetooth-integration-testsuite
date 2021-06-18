@@ -344,12 +344,10 @@ def test_extended_advertising(peripheral, peripheral_address, central, central_a
         peripheral.gap.setAdvertisingParameters(handle)
 
         peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
-        sleep(1)
         assert peripheral.gap.isAdvertisingActive(handle).result is True
         assert verify_advertising(peripheral_address, central, test_params) is True
 
         peripheral.gap.stopAdvertising(handle)
-        sleep(1)
         assert peripheral.gap.isAdvertisingActive(handle).result is False
         assert verify_advertising(peripheral_address, central, test_params) is False
 
@@ -372,11 +370,9 @@ def test_extended_advertising_timeout(peripheral, peripheral_address, central, c
         assert verify_advertising(peripheral_address, central, test_params) is False
 
         peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, 1)
-        sleep(1)
         assert verify_advertising(peripheral_address, central, test_params) is False
 
         peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
-        sleep(1)
         assert verify_advertising(peripheral_address, central, test_params) is True
 
 
@@ -399,19 +395,16 @@ def test_extended_advertising_multiple_times(peripheral, peripheral_address, cen
                 peripheral.gap.setAdvertisingParameters(handles[i])
                 peripheral.gap.startAdvertising(handles[i], ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
 
-            sleep(1)
             assert peripheral.gap.isAdvertisingActive(handles[0]).result is True
             assert peripheral.gap.isAdvertisingActive(handles[1]).result is True
             assert verify_advertising(peripheral_address, central, test_params) is True
 
             peripheral.gap.stopAdvertising(handles[0])
-            sleep(1)
             assert peripheral.gap.isAdvertisingActive(handles[0]).result is False
             assert peripheral.gap.isAdvertisingActive(handles[1]).result is True
             assert verify_advertising(peripheral_address, central, test_params) is True
 
             peripheral.gap.stopAdvertising(handles[1])
-            sleep(1)
             assert peripheral.gap.isAdvertisingActive(handles[0]).result is False
             assert peripheral.gap.isAdvertisingActive(handles[1]).result is False
             assert verify_advertising(peripheral_address, central, test_params) is False
