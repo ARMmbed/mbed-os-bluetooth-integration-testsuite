@@ -2,7 +2,7 @@ name: Run ble integration tests
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '30 * * * *'
+    - cron:  '0 1 * * *'
 jobs:
   run-integration-tests:
     name: Integration tests
