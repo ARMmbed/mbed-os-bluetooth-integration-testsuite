@@ -18,11 +18,15 @@ from typing import List, Optional, Any, Mapping
 import mbed_lstools
 import pytest
 from mbed_flasher.flash import Flash
+from device import Device
 
 from .ble_device import BleDevice
 from .serial_connection import SerialConnection
 from .serial_device import SerialDevice
 
+import logging
+
+log = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def platforms(request):
@@ -76,6 +80,7 @@ class BoardAllocation:
 
 
 class BoardAllocator:
+    ALLOCATION_RETRIES = 3
     def __init__(self, platforms_supported: List[str], binaries: Mapping[str, str], serial_inter_byte_delay: float, baudrate: int, command_delay: float):
         mbed_ls = mbed_lstools.create()
         boards = mbed_ls.list_mbeds(filter_function=lambda m: m['platform_name'] in platforms_supported)
@@ -109,17 +114,32 @@ class BoardAllocator:
                 )
                 connection.open()
 
-                # Create the serial device
-                serial_device = SerialDevice(connection, name)
-                serial_device.reset(duration=1)
-                serial_device.flush(1)
+                retry = BoardAllocator.ALLOCATION_RETRIES
+                serial_device = None
 
-                # Create the BleDevice
-                alloc.ble_device = BleDevice(serial_device, command_delay=self.command_delay)
+                while True:
+                    try:
+                        # Create the serial device
+                        serial_device = SerialDevice(connection, name)
+                        serial_device.reset(duration=1)
+                        serial_device.flush(1)
 
-                alloc.ble_device.send('set --retcode true', 'retcode: 0')
-                alloc.ble_device.send('echo off', 'retcode: 0')
-                alloc.ble_device.send('set --vt100 off', 'retcode: 0')
+                        # Create the BleDevice
+                        alloc.ble_device = BleDevice(serial_device, command_delay=self.command_delay)
+
+                        alloc.ble_device.send('set --retcode true', 'retcode: 0', wait_for_response=5)
+                        alloc.ble_device.send('echo off', 'retcode: 0')
+                        alloc.ble_device.send('set --vt100 off', 'retcode: 0')
+
+                        break
+
+                    except serial_device.BoardCommunicationFailed:
+                        if retry:
+                            retry -= 1
+                            self.release(serial_device)
+                            log.warning("Board failed to allocate, retrying")
+                        else:
+                            raise
 
                 return alloc.ble_device
         return None

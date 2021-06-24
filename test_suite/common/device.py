@@ -22,10 +22,13 @@ log = logging.getLogger(__name__)
 
 
 class Device:
+    class BoardCommunicationFailed(Exception):
+        pass
 
     def __init__(self, name: Optional[str] = None):
         self.iq = queue.Queue()
         self.oq = queue.Queue()
+        self.line_read = False
         if name is None:
             self.name = str(hex(id(self)))
         else:
@@ -86,6 +89,8 @@ class Device:
             try:
                 line = self._read_line(1)
                 if line:
+                    # mark the board as communicating so we don't retry
+                    self.line_read = True
                     lines.append(line)
                     if search in line:
                         end = time()
@@ -96,8 +101,11 @@ class Device:
                 now = time()
                 if now - start >= timeout:
                     if assert_timeout:
-                        log.error(timeout_error_msg)
-                        assert False, timeout_error_msg
+                        if self.line_read:
+                            log.error(timeout_error_msg)
+                            assert False, timeout_error_msg
+                        else:
+                            raise Device.BoardCommunicationFailed("Waiting for first reply timed out")
                     else:
                         log.warning(timeout_error_msg)
                         return []
