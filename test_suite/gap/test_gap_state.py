@@ -92,6 +92,15 @@ def central_address(central):
     yield central.gap.getAddress().result
 
 
+def verify_advertising(peripheral_address, central, test_params):
+    """check scan reports for presence of advertising"""
+
+    central.scanParams.set1mPhyConfiguration(*test_params.scanParams)
+    central.gap.setScanParameters()
+    scan_records = central.gap.scanForAddress(peripheral_address['address'], test_params.scanTimeout).result
+    return len(scan_records) > 0
+
+
 @pytest.mark.ble41
 def test_advertising(peripheral, peripheral_address, central, test_params):
     """validate that when a device is advertising and not disconnected,
@@ -322,3 +331,88 @@ def test_advertising_after_disconnection(peripheral, peripheral_address, central
     scan_records = peripheral.gap.scanForAddress(central_address['address'], test_params.scanTimeout).result
     assert len(scan_records) > 0
 
+
+@pytest.mark.ble50
+def test_extended_advertising(peripheral, peripheral_address, central, central_address, test_params):
+    """test extended advertising start and stop"""
+
+    central_supported = peripheral.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    peripheral_supported = central.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    if central_supported and peripheral_supported:
+        handle = peripheral.gap.createAdvertisingSet().result
+        peripheral.advParams.setType("NON_CONNECTABLE_UNDIRECTED")
+        peripheral.gap.setAdvertisingParameters(handle)
+
+        peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
+        assert peripheral.gap.isAdvertisingActive(handle).result is True
+        assert verify_advertising(peripheral_address, central, test_params) is True
+
+        peripheral.gap.stopAdvertising(handle)
+        assert peripheral.gap.isAdvertisingActive(handle).result is False
+        assert verify_advertising(peripheral_address, central, test_params) is False
+
+
+@pytest.mark.ble50
+def test_extended_advertising_timeout(peripheral, peripheral_address, central, central_address, test_params):
+    """test extended advertising timeout causes the adv set to stop"""
+
+    central_supported = peripheral.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    peripheral_supported = central.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    if central_supported and peripheral_supported:
+        handle = peripheral.gap.createAdvertisingSet().result
+        peripheral.advParams.setType("NON_CONNECTABLE_UNDIRECTED")
+        peripheral.gap.setAdvertisingParameters(handle)
+
+        peripheral.gap.startAdvertising(handle, 100, ADV_MAX_EVENTS_UNLIMITED)
+        assert peripheral.gap.isAdvertisingActive(handle).result is True
+        sleep(2)
+        assert peripheral.gap.isAdvertisingActive(handle).result is False
+        assert verify_advertising(peripheral_address, central, test_params) is False
+
+        peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, 1)
+        assert verify_advertising(peripheral_address, central, test_params) is False
+
+        peripheral.gap.startAdvertising(handle, ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
+        assert verify_advertising(peripheral_address, central, test_params) is True
+
+
+@pytest.mark.ble50
+def test_extended_advertising_multiple_times(peripheral, peripheral_address, central, central_address, test_params):
+    """test extended advertising start and stop mutliple times in sequence"""
+
+    central_supported = peripheral.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    peripheral_supported = central.gap.isFeatureSupported("LE_EXTENDED_ADVERTISING").result
+    central_num_of_sets = peripheral.gap.getMaxAdvertisingSetNumber().result
+    peripheral_num_of_sets = peripheral.gap.getMaxAdvertisingSetNumber().result
+    if central_supported and peripheral_supported and central_num_of_sets > 2 and peripheral_num_of_sets > 2:
+        # create and destroy sequence done twice in a row
+        for n in range(2):
+            handles = [0, 0]
+            # create sets
+            for i in range(2):
+                handles[i] = peripheral.gap.createAdvertisingSet().result
+                peripheral.advParams.setType("NON_CONNECTABLE_UNDIRECTED")
+                peripheral.gap.setAdvertisingParameters(handles[i])
+                peripheral.gap.startAdvertising(handles[i], ADV_DURATION_FOREVER, ADV_MAX_EVENTS_UNLIMITED)
+
+            assert peripheral.gap.isAdvertisingActive(handles[0]).result is True
+            assert peripheral.gap.isAdvertisingActive(handles[1]).result is True
+            assert verify_advertising(peripheral_address, central, test_params) is True
+
+            peripheral.gap.stopAdvertising(handles[0])
+            assert peripheral.gap.isAdvertisingActive(handles[0]).result is False
+            assert peripheral.gap.isAdvertisingActive(handles[1]).result is True
+            assert verify_advertising(peripheral_address, central, test_params) is True
+
+            peripheral.gap.stopAdvertising(handles[1])
+            assert peripheral.gap.isAdvertisingActive(handles[0]).result is False
+            assert peripheral.gap.isAdvertisingActive(handles[1]).result is False
+            assert verify_advertising(peripheral_address, central, test_params) is False
+
+            # destroy sets
+            for i in range(2):
+                peripheral.gap.destroyAdvertisingSet(handles[i]).result
+
+            sleep(1)
+            assert peripheral.gap.isAdvertisingActive(handles[0]).result is False
+            assert peripheral.gap.isAdvertisingActive(handles[1]).result is False
