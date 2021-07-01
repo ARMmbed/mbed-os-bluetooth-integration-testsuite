@@ -8,6 +8,9 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
     container: mbedos/mbed-os-env:latest
+    strategy:
+      matrix:
+        MBED_TARGET: [disco-3x, nrf-3x]
     steps:
       - name: Install dependencies
         run: |
@@ -23,15 +26,15 @@ jobs:
           lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
           lavacli workers list
           cd mbed-os-lava-scripts/jobs
-          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml ARMmbed/mbed-os-bluetooth-integration-testsuite`
+          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml [${{ matrix.MBED_TARGET }}] ARMmbed/mbed-os-bluetooth-integration-testsuite`
           echo "Running lava job $LAVA_JOB_NO"
           cd ../..
           lavacli jobs wait $LAVA_JOB_NO
           echo "lava job $LAVA_JOB_NO completed"
-          lavacli jobs logs $LAVA_JOB_NO > ble-integration-test.log
+          lavacli jobs logs $LAVA_JOB_NO > ble-integration-test-${{ matrix.MBED_TARGET }}.log
 
       - name: Upload integration test logs
         uses: actions/upload-artifact@v2.2.3
         with:
           name: integration-test-log
-          path: ble-integration-test.log
+          path: ble-integration-test-${{ matrix.MBED_TARGET }}.log
