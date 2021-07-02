@@ -30,7 +30,7 @@ jobs:
           lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
           lavacli workers list
           cd mbed-os-lava-scripts/jobs
-          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml [${{ matrix.MBED_TARGET }}] $REPOSITORY $SHA`
+          LAVA_JOB_NO=`./launch_job.sh [${{ matrix.MBED_TARGET }}] ble_test.yaml $REPOSITORY $SHA`
           echo "Running lava job $LAVA_JOB_NO"
           cd ../..
 
