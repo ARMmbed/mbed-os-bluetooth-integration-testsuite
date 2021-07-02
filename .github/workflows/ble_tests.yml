@@ -3,11 +3,15 @@ on:
   workflow_dispatch:
   schedule:
     - cron:  '0 1 * * *'
+  pull_request:
 jobs:
   run-integration-tests:
     name: Integration tests
     runs-on: ubuntu-latest
     container: mbedos/mbed-os-env:latest
+    strategy:
+      matrix:
+        MBED_TARGET: [disco-3x, nrf-3x]
     steps:
       - name: Install dependencies
         run: |
@@ -18,20 +22,50 @@ jobs:
         env:
           LAVA_SERVER_TOKEN: ${{ secrets.LAVA_SERVER_TOKEN }}
           LAVA_SERVER_URL: ${{ secrets.LAVA_SERVER_URL }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
+          
           git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
           lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
           lavacli workers list
           cd mbed-os-lava-scripts/jobs
-          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml ARMmbed/mbed-os-bluetooth-integration-testsuite`
+          LAVA_JOB_NO=`./launch_job.sh ble_test.yaml [${{ matrix.MBED_TARGET }}] $REPOSITORY $SHA`
           echo "Running lava job $LAVA_JOB_NO"
           cd ../..
+
+          LOG_NAME="ble-integration-test-${{ matrix.MBED_TARGET }}.log"
+          lavacli jobs logs $LAVA_JOB_NO > $LOG_NAME
+
+          # wait for job to finish grab the log and filter secrets
           lavacli jobs wait $LAVA_JOB_NO
           echo "lava job $LAVA_JOB_NO completed"
-          lavacli jobs logs $LAVA_JOB_NO > ble-integration-test.log
+          lavacli jobs logs $LAVA_JOB_NO > $LOG_NAME
+          sed -i "s/${{ secrets.USER_TOKEN }}/==USER_TOKEN==/" $LOG_NAME
+          sed -i "s/${{ secrets.LAVA_SERVER_TOKEN }}/==LAVA_SERVER_TOKEN==/" $LOG_NAME
+
+          # get test result
+          LAVA_TEST_RESULT="failure"
+          JOB_RESULT=`lavacli jobs show $LAVA_JOB_NO | grep Health | cut -d':' -f 2 | xargs`
+          if [ $JOB_RESULT = Complete ]; then LAVA_TEST_RESULT="success"; fi
+          # store value between steps
+          echo "lava_result=${LAVA_TEST_RESULT}" >> $GITHUB_ENV
+
+          # show the log in workflow
+          printf "\n\n---------------------------- LAVA log ----------------------------------\n\n"
+          cat $LOG_NAME
+          printf "\n\n---------------------------- LAVA log end ------------------------------\n\n"
+
+      - name: Set GitHub Checks complete
+        uses: LouisBrunner/checks-action@v1.1.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: lava job
+          status: completed
+          conclusion: ${{ env.lava_result }}
 
       - name: Upload integration test logs
         uses: actions/upload-artifact@v2.2.3
         with:
           name: integration-test-log
-          path: ble-integration-test.log
+          path: ble-integration-test-${{ matrix.MBED_TARGET }}.log
