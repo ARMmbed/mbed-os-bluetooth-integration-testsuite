@@ -1,0 +1,55 @@
+name: Run tests
+on:
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 1 * * *'
+  pull_request:
+jobs:
+  build-integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    container: mbedos/mbed-os-env:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y lavacli curl
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          cd ble-cliapp
+          mbed deploy
+          mbed compile -t GCC_ARM -m NRF52840_DK --profile toolchains_profile.json || exit 1
+          mbed compile -t GCC_ARM -m DISCO_L475VG_IOT01A --profile toolchains_profile.json || exit 1
+
+      - name: Uploading Binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: ble-cliapp-GCC_ARM-NRF52840_DK-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /ble-cliapp/BUILD/NRF52840_DK/GCC_ARM-TOOLCHAINS_PROFILE/ble-cliapp.hex
+
+      - name: Uploading Binaries
+        uses: actions/upload-artifact@v2
+        with:
+          name: ble-cliapp-GCC_ARM-DISCO_L475VG_IOT01A-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /ble-cliapp/BUILD/DISCO_L475VG_IOT01A/GCC_ARM-TOOLCHAINS_PROFILE/ble-cliapp.hex
+
+      - name: Trigger lava workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Run integration tests
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.PAT }}
+          inputs: '{ "SHA": "${{ github.event.pull_request.head.sha || github.sha }}" }'
+
+      - name: set lava job status to pending
+        env:
+          USER_TOKEN: ${{ secrets.PAT }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          curl --user ${USER_TOKEN} -H "POST" https://api.github.com/repos/${REPOSITORY}/statuses/${SHA} -d "{\"state\": \"pending\", \"context\": \"lava-test\" }"
+
