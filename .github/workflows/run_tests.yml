@@ -1,0 +1,65 @@
+name: Run integration tests
+on:
+  workflow_dispatch:
+    inputs:
+      SHA:
+        description: 'SHA to run test on'
+        required: true
+jobs:
+  run-integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    container: mbedos/mbed-os-env:latest
+    strategy:
+      matrix:
+        MBED_TARGET: [ disco-3x, nrf-3x ]
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y lavacli curl
+
+      - name: Set GitHub checks pending
+        uses: LouisBrunner/checks-action@v1.1.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: launch lava job
+          status: in_progress
+
+      - name: Run lava job
+        env:
+          LAVA_SERVER_TOKEN: ${{ secrets.LAVA_SERVER_TOKEN }}
+          LAVA_SERVER_URL: ${{ secrets.LAVA_SERVER_URL }}
+          USER_TOKEN: ${{ secrets.PAT }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.event.inputs.SHA }}
+          TAG: ${{ matrix.MBED_TARGET }}
+          JOB_NAME: ble_test.yaml
+        run: |
+          git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
+
+          # run lava job
+          LAVA_TEST_RESULT=$(./mbed-os-lava-scripts/jobs/launch_and_wait_for_job.sh -t ${TAG} -j ${JOB_NAME} -r ${REPOSITORY} -s ${SHA} -u ${USER_TOKEN} -l ${LAVA_SERVER_URL} -p ${LAVA_SERVER_TOKEN} | tail -1)
+
+          # store the result for next step
+          echo "lava_result=${LAVA_TEST_RESULT}" >> $GITHUB_ENV
+
+          # show the log in workflow
+          printf "\n\n---------------------------- LAVA log ----------------------------------\n\n"
+          cat test.log
+          printf "\n\n---------------------------- LAVA log end ------------------------------\n\n"
+
+      - name: Set GitHub Checks complete
+        uses: LouisBrunner/checks-action@v1.1.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: launch lava job
+          status: completed
+          conclusion: ${{ env.lava_result }}
+
+      - name: Upload integration test logs
+        uses: actions/upload-artifact@v2.2.3
+        with:
+          name: ble-integration-test.log
+          path: test.log
+
