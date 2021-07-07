@@ -6,7 +6,7 @@ on:
   pull_request:
 jobs:
   build-integration-tests:
-    name: Integration tests
+    name: Build cli-app
     runs-on: ubuntu-latest
     container: mbedos/mbed-os-env:latest
     steps:
