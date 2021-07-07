@@ -34,7 +34,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           SHA: ${{ github.event.inputs.SHA }}
           TAG: ${{ matrix.MBED_TARGET }}
-          JOB_NAME: services_test.yaml
+          JOB_NAME: ble_test.yaml
         run: |
           git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
 
