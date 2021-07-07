@@ -1,8 +1,8 @@
-name: Run tests
+name: Build tests
 on:
   workflow_dispatch:
   schedule:
-    - cron:  '0 1 * * *'
+    - cron:  '0 1 * * 0'
   pull_request:
 jobs:
   build-integration-tests:
@@ -44,12 +44,3 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           token: ${{ secrets.PAT }}
           inputs: '{ "SHA": "${{ github.event.pull_request.head.sha || github.sha }}" }'
-
-      - name: set lava job status to pending
-        env:
-          USER_TOKEN: ${{ secrets.PAT }}
-          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          curl --user ${USER_TOKEN} -H "POST" https://api.github.com/repos/${REPOSITORY}/statuses/${SHA} -d "{\"state\": \"pending\", \"context\": \"lava-test\" }"
-

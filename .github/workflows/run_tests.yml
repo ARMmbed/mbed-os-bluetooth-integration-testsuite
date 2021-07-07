@@ -32,40 +32,21 @@ jobs:
           LAVA_SERVER_URL: ${{ secrets.LAVA_SERVER_URL }}
           USER_TOKEN: ${{ secrets.PAT }}
           REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.event.inputs.SHA }}
+          TAG: ${{ matrix.MBED_TARGET }}
+          JOB_NAME: services_test.yaml
         run: |
-          SHA=${{ github.event.inputs.SHA }}
-          LOG_NAME="ble-integration-test-${{ matrix.MBED_TARGET }}.log"
-
           git clone https://github.com/ARMmbed/mbed-os-lava-scripts.git mbed-os-lava-scripts
 
-          # log in our lavacli
-          lavacli identities add --uri "$LAVA_SERVER_URL" --username lava-admin --token "$LAVA_SERVER_TOKEN" default
+          # run lava job
+          LAVA_TEST_RESULT=$(./mbed-os-lava-scripts/jobs/launch_and_wait_for_job.sh -t ${TAG} -j ${JOB_NAME} -r ${REPOSITORY} -s ${SHA} -u ${USER_TOKEN} -l ${LAVA_SERVER_URL} -p ${LAVA_SERVER_TOKEN} | tail -1)
 
-          # prepare the job definition and submit it
-          cd mbed-os-lava-scripts/jobs
-          LAVA_JOB_NO=`./launch_job.sh [${{ matrix.MBED_TARGET }}] services_test.yaml ${REPOSITORY} ${SHA} ${USER_TOKEN}`
-          echo "Running lava job $LAVA_JOB_NO"
-          cd ../..
-
-          # wait for job to finish grab the log and filter secrets
-          lavacli jobs wait $LAVA_JOB_NO
-          echo "lava job $LAVA_JOB_NO completed"
-
-          lavacli jobs logs $LAVA_JOB_NO > $LOG_NAME
-
-          sed -i "s/${USER_TOKEN}/==USER_TOKEN==/" $LOG_NAME
-          sed -i "s/${LAVA_SERVER_TOKEN}/==LAVA_SERVER_TOKEN==/" $LOG_NAME
-
-          # get test result
-          LAVA_TEST_RESULT="failure"
-          JOB_RESULT=`lavacli jobs show $LAVA_JOB_NO | grep Health | cut -d':' -f 2 | xargs`
-          if [ $JOB_RESULT = Complete ]; then LAVA_TEST_RESULT="success"; fi
-          # store value between steps
+          # store the result for next step
           echo "lava_result=${LAVA_TEST_RESULT}" >> $GITHUB_ENV
 
           # show the log in workflow
           printf "\n\n---------------------------- LAVA log ----------------------------------\n\n"
-          cat $LOG_NAME
+          cat test.log
           printf "\n\n---------------------------- LAVA log end ------------------------------\n\n"
 
       - name: Set GitHub Checks complete
@@ -80,5 +61,5 @@ jobs:
         uses: actions/upload-artifact@v2.2.3
         with:
           name: ble-integration-test.log
-          path: ble-integration-test-${{ matrix.MBED_TARGET }}.log
+          path: test.log
 
