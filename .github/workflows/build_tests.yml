@@ -48,5 +48,5 @@ jobs:
         with:
           workflow: Run integration tests
           ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "SHA": "${{ github.event.pull_request.head.sha || github.sha }}" }'
