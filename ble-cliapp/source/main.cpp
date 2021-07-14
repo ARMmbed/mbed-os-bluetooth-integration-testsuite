@@ -186,6 +186,23 @@ void app_start(int, char*[])
     get_serial().baud(115200);    // This is default baudrate for our test applications. 230400 is also working, but not 460800. At least with k64f.
     get_serial().attach(whenRxInterrupt);
 
+    mbed_trace_init();
+    mbed_trace_prefix_function_set([](size_t) {
+        // This is the prefix added before any trace, the new line is used to
+        // ensure the trace is not rendered inside a line containing a json
+        // payload. The test tool filter out traces based on this pattern.
+        static char prefix[] = "\n~~~";
+        return prefix;
+    });
+    mbed_trace_print_function_set([](const char* str) {
+        get_serial().write(str, strlen(str));
+        // Note: line return in mbed_trace somehow doesn't work if color support
+        // is deactivated.
+        get_serial().write("\n", 1);
+    });
+    // Disable color support and carriage return support
+    mbed_trace_config_set(TRACE_ACTIVE_LEVEL_ALL);
+
     cmd_init( &custom_cmd_response_out );
     cmd_set_ready_cb( cmd_ready_cb );
     cmd_history_size(1);

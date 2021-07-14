@@ -25,7 +25,8 @@
             "target.printf_lib": "std",
             "platform.stdio-flush-at-exit": false,
             "platform.stdio-baud-rate": 115200,
-            "cordio.desired-att-mtu": 80
+            "cordio.desired-att-mtu": 80,
+            "mbed-trace.enable": null
         },
         "K64F": {
             "target.features_add": ["BLE"],

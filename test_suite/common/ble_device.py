@@ -338,6 +338,7 @@ class BleDevice(Device):
         self.device = device
         self.command_delay = command_delay
         self.events = queue.Queue()
+        self.log = queue.Queue()
 
     def command(self, cmd: str, expected_retcode: int = 0, async_command: bool = False) -> CommandResult:
         """Send a command to the device and return a CommandResult.
@@ -395,23 +396,25 @@ class BleDevice(Device):
     def send(self, command, expected_output=None, wait_before_read=None, wait_for_response=30, assert_output=True):
         sleep(self.command_delay)
         lines = self.device.send(command, expected_output, wait_before_read, wait_for_response, assert_output)
-        return self._filter_events(lines)
+        return self._filter_output(lines)
 
     def flush(self, timeout: float = 0) -> [str]:
         lines = self.device.send(timeout)
-        return self._filter_events(lines)
+        return self._filter_output(lines)
 
     def wait_for_output(self, search: str, timeout: float = 30, assert_timeout: bool = True) -> [str]:
         lines = self.device.wait_for_output(search, timeout, assert_timeout)
-        return self._filter_events(lines)
+        return self._filter_output(lines)
 
-    def _filter_events(self, lines: List[str]) -> Optional[List[str]]:
+    def _filter_output(self, lines: List[str]) -> Optional[List[str]]:
         if lines is None:
             return None
         unfiltered_lines = []
         for line in lines:
             if line.startswith('<<<'):
                 self.events.put(line[len('<<<'):])
+            elif line.startswith('~~~'):
+                self.log.put(line[len('~~~'):])
             else:
                 unfiltered_lines.append(line)
         return unfiltered_lines
